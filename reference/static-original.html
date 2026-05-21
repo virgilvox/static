@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STATIC // tune the channel</title>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Permanent+Marker&family=VT323&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@clasp-to/core@4.3.1" crossorigin="anonymous"></script>
+<style>
+  :root{
+    --void:#0a0a0a; --void2:#141210; --bone:#ece6d6; --bone-dim:#cfc7b2;
+    --acid:#9dff00; --acid-dk:#5f9b00; --cyan:#00e5ff; --cyan-dk:#0094a8;
+    --rec:#ff2d2d; --ink:#1a1a1a; --mute:#7d776a;
+    --mono:'VT323',monospace; --type:'Special Elite',monospace; --mark:'Permanent Marker',cursive; --code:'Courier Prime',monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--void); color:var(--bone); font-family:var(--type);
+    font-size:16px; line-height:1.5; overflow-x:hidden; position:relative;
+  }
+  /* CRT scanlines + faint static over everything */
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:9000;
+    background:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0,rgba(0,0,0,0) 2px,rgba(0,0,0,.18) 3px,rgba(0,0,0,0) 4px);
+    mix-blend-mode:multiply; opacity:.5;
+  }
+  body::after{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:8999; opacity:.04;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  a{color:var(--cyan);text-decoration:none;border-bottom:1px dotted var(--cyan)}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 18px}
+
+  /* header */
+  header{position:sticky;top:0;z-index:200;background:var(--void2);border-bottom:3px solid var(--acid);}
+  .bar{display:flex;align-items:center;gap:14px;padding:10px 18px;max-width:1100px;margin:0 auto}
+  .logo{font-family:var(--mark);font-size:30px;color:var(--bone);letter-spacing:1px;line-height:1;text-shadow:3px 3px 0 var(--acid),5px 5px 0 var(--rec)}
+  .logo .b{color:var(--acid)}
+  .tag{font-family:var(--mono);font-size:18px;color:var(--cyan);opacity:.8;flex:1}
+  .status{font-family:var(--mono);font-size:18px;border:2px solid var(--mute);padding:2px 10px;color:var(--mute);white-space:nowrap}
+  .status.on{color:var(--acid);border-color:var(--acid)}
+
+  h1,h2,h3{font-family:var(--mark);font-weight:400;line-height:1.05}
+  h2{font-size:32px;margin:6px 0 2px}
+  h3{font-size:21px;color:var(--bone)}
+  .kick{font-family:var(--mono);font-size:20px;color:var(--acid);letter-spacing:2px}
+  .lead{font-family:var(--type);color:var(--bone-dim);max-width:62ch}
+
+  section{padding:26px 0}
+  .panel{background:var(--bone);color:var(--ink);border:2px solid var(--ink);box-shadow:6px 6px 0 0 var(--acid);padding:18px}
+  .panel.dk{background:var(--void2);color:var(--bone);border-color:var(--acid);box-shadow:6px 6px 0 0 rgba(0,0,0,.6)}
+  .panel + .panel{margin-top:18px}
+
+  label.fld{display:block;font-family:var(--mono);font-size:19px;color:var(--ink);margin:14px 0 4px;letter-spacing:1px}
+  .panel.dk label.fld{color:var(--cyan)}
+  input[type=text], select{
+    width:100%;font-family:var(--code);font-size:15px;padding:9px 10px;background:#fff;color:var(--ink);
+    border:2px solid var(--ink);outline:none
+  }
+  input[type=text]:focus,select:focus{border-color:var(--acid-dk);box-shadow:3px 3px 0 0 var(--acid)}
+  .hint{font-family:var(--code);font-size:12px;color:var(--mute);margin-top:3px}
+
+  .row{display:flex;flex-wrap:wrap;gap:14px}
+  .col{flex:1 1 220px;min-width:200px}
+
+  /* chips */
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .chip{font-family:var(--mono);font-size:18px;border:2px solid var(--ink);background:#fff;padding:2px 10px;cursor:pointer;user-select:none;display:inline-flex;align-items:center;gap:6px}
+  .chip .x{color:var(--rec)}
+  .seg{display:flex;flex-wrap:wrap;gap:0;border:2px solid var(--ink);width:fit-content;max-width:100%}
+  .seg button{font-family:var(--mono);font-size:18px;padding:5px 13px;background:#fff;color:var(--ink);border:none;border-right:2px solid var(--ink);cursor:pointer}
+  .seg button:last-child{border-right:none}
+  .seg button.sel{background:var(--ink);color:var(--acid)}
+  .reveal-row{display:flex;align-items:center;gap:8px;justify-content:space-between}
+  .eye{font-family:var(--mono);font-size:15px;border:2px solid var(--ink);padding:1px 8px;cursor:pointer;background:#fff;white-space:nowrap}
+  .eye.shown{background:var(--cyan-dk);color:#fff;border-color:var(--cyan-dk)}
+  .eye.hidden{background:#fff;color:var(--mute)}
+
+  /* buttons */
+  .btn{font-family:var(--mark);font-size:20px;letter-spacing:1px;padding:10px 20px;border:2px solid var(--ink);background:var(--acid);color:var(--ink);cursor:pointer;box-shadow:4px 4px 0 0 var(--ink);transition:transform .05s}
+  .btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 0 var(--ink)}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+  .btn.cyan{background:var(--cyan)}
+  .btn.ghost{background:transparent;color:var(--bone);border-color:var(--bone);box-shadow:4px 4px 0 0 rgba(157,255,0,.5)}
+  .btn.rec{background:var(--rec);color:#fff;border-color:#000}
+  .btn.sm{font-size:15px;padding:7px 13px;box-shadow:3px 3px 0 0 var(--ink)}
+  .btnrow{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px;align-items:center}
+
+  .scrim{display:none}
+  .scrim.show{display:block}
+
+  /* lobby grid */
+  .lobby-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+  .freq{font-family:var(--mono);font-size:22px;color:var(--cyan)}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;margin-top:18px}
+  .card{background:var(--void2);border:2px solid var(--bone-dim);padding:14px;box-shadow:5px 5px 0 0 rgba(0,0,0,.6);position:relative}
+  .card .handle{font-family:var(--mark);font-size:22px;color:var(--bone)}
+  .card .score{position:absolute;top:10px;right:12px;font-family:var(--mono);font-size:22px;color:var(--acid)}
+  .card .meta{font-family:var(--code);font-size:12px;color:var(--bone-dim);margin-top:6px}
+  .card .ctags{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}
+  .card .ct{font-family:var(--mono);font-size:15px;color:var(--cyan);border:1px solid var(--cyan-dk);padding:0 6px}
+  .empty{font-family:var(--mono);font-size:22px;color:var(--mute);text-align:center;padding:40px 0}
+
+  /* call view */
+  .vid-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+  .vbox{position:relative;background:#000;border:2px solid var(--bone-dim);overflow:hidden}
+  .vbox video{width:100%;aspect-ratio:4/3;display:block;background:#000;object-fit:cover}
+  .vbox.me video{transform:scaleX(-1)}
+  .vbox .vlabel{position:absolute;left:0;bottom:0;font-family:var(--mono);font-size:17px;background:rgba(0,0,0,.65);color:var(--acid);padding:1px 8px;letter-spacing:1px}
+  .vbox .vrev{position:absolute;right:0;top:0;font-family:var(--code);font-size:11px;background:rgba(0,0,0,.6);color:var(--bone-dim);padding:2px 6px;max-width:80%;text-align:right}
+  .recdot{position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:300;display:none;font-family:var(--mono);font-size:20px;color:#fff;background:var(--rec);border:2px solid #000;padding:2px 12px;letter-spacing:2px;box-shadow:3px 3px 0 0 #000}
+  .recdot.on{display:block;animation:blink 1s steps(2) infinite}
+  @keyframes blink{50%{opacity:.35}}
+
+  .controls{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:18px}
+
+  /* incoming ring */
+  .ring{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center}
+  .ring.show{display:flex}
+  .ring .box{background:var(--bone);color:var(--ink);border:3px solid var(--rec);box-shadow:8px 8px 0 0 var(--rec);padding:24px;max-width:380px;text-align:center}
+
+  .log{font-family:var(--code);font-size:12px;color:var(--mute);background:var(--void2);border:1px solid #222;padding:8px 10px;max-height:120px;overflow-y:auto;white-space:pre-wrap;margin-top:14px}
+
+  .note{font-family:var(--code);font-size:12.5px;color:var(--ink);background:rgba(0,229,255,.12);border-left:4px solid var(--cyan-dk);padding:10px 12px;margin-top:14px}
+  .panel.dk .note{color:var(--bone);background:rgba(0,229,255,.08)}
+  .warn{border-left-color:var(--rec);background:rgba(255,45,45,.1)}
+
+  .tape{display:inline-block;background:var(--acid);color:var(--ink);font-family:var(--mono);font-size:16px;padding:1px 10px;transform:rotate(-2deg);border:1px solid var(--ink)}
+  footer{padding:30px 0 50px;text-align:center;font-family:var(--code);font-size:12px;color:var(--mute)}
+  .hidden{display:none!important}
+  @media(max-width:560px){.logo{font-size:24px}.tag{display:none}}
+</style>
+</head>
+<body>
+
+<div class="recdot" id="recDot"><i class="fa-solid fa-circle"></i> REC // all parties notified</div>
+
+<header>
+  <div class="bar">
+    <div class="logo">STAT<span class="b">I</span>C</div>
+    <div class="tag">// flip through strangers like dead channels</div>
+    <div class="status" id="netStatus"><i class="fa-solid fa-tower-broadcast"></i> offline</div>
+  </div>
+</header>
+
+<!-- ============ SCREEN 1: SETUP ============ -->
+<section class="wrap scrim show" id="screenSetup">
+  <span class="tape">no login &middot; no database &middot; you hold your own identity</span>
+  <h2>Build a signal. Reveal what you want.</h2>
+  <p class="lead">Every field is optional. Leave it all blank if you like. The key trick: a field can be used to <b>match</b> you without ever being <b>shown</b> to the other person. Hit the eye to flip a field between <span style="color:var(--cyan-dk)">shown</span> and <span style="color:var(--mute)">match-only</span>.</p>
+
+  <div class="panel" style="margin-top:18px">
+    <label class="fld">HANDLE</label>
+    <input type="text" id="f_handle" maxlength="24" placeholder="what should we call you on-air?">
+    <div class="hint">shown to everyone. no real names needed.</div>
+
+    <div class="row" style="margin-top:6px">
+      <div class="col">
+        <div class="reveal-row"><label class="fld">COUNTRY</label><span class="eye shown" data-rev="country">shown</span></div>
+        <select id="f_country"><option value="">loading places…</option></select>
+      </div>
+      <div class="col">
+        <div class="reveal-row"><label class="fld">STATE / PROVINCE / REGION</label><span class="eye shown" data-rev="state">shown</span></div>
+        <select id="f_state"><option value="">— pick a country first —</option></select>
+        <div class="hint">region only — never a city or address.</div>
+      </div>
+      <div class="col">
+        <div class="reveal-row"><label class="fld">LANGUAGE</label><span class="eye shown" data-rev="language">shown</span></div>
+        <select id="f_language"><option value="">— pick or skip —</option></select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col">
+        <div class="reveal-row"><label class="fld">POLITICAL LEAN</label><span class="eye shown" data-rev="politics">shown</span></div>
+        <select id="f_politics"></select>
+      </div>
+      <div class="col">
+        <div class="reveal-row"><label class="fld">RELIGION</label><span class="eye hidden" data-rev="religion">match-only</span></div>
+        <select id="f_religion"></select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col">
+        <div class="reveal-row"><label class="fld">GENDER</label><span class="eye shown" data-rev="gender">shown</span></div>
+        <select id="f_gender"></select>
+      </div>
+      <div class="col">
+        <div class="reveal-row"><label class="fld">ORIENTATION</label><span class="eye hidden" data-rev="orientation">match-only</span></div>
+        <select id="f_orientation"></select>
+      </div>
+    </div>
+
+    <label class="fld">FANDOMS / OBSESSIONS</label>
+    <input type="text" id="f_fandom" placeholder="type + enter: dune, formula1, black midi...">
+    <div class="chips" id="fandomChips"></div>
+
+    <label class="fld">FREE TAGS</label>
+    <input type="text" id="f_tags" placeholder="type + enter: nightowl, rustlang, vinyl, anarchist...">
+    <div class="chips" id="tagChips"></div>
+
+    <div class="note"><i class="fa-solid fa-shield-halved"></i> Match-only fields are bucketed before they leave your machine. The other person's browser checks compatibility without the raw value ever rendering on their screen.</div>
+  </div>
+
+  <div class="panel" style="margin-top:18px">
+    <label class="fld">AGE GATE</label>
+    <div class="seg" id="ageGate">
+      <button data-age="no" class="sel">I am under 18</button>
+      <button data-age="yes">I am 18 or older</button>
+    </div>
+    <div class="hint">camera will not turn on until you confirm you're an adult.</div>
+  </div>
+
+  <div class="panel" style="margin-top:18px">
+    <label class="fld">RELAY</label>
+    <input type="text" id="f_relay" value="wss://relay.clasp.to" spellcheck="false">
+    <div class="hint">The signaling relay. The public default works from a normal page. Running your own router? Use <code>ws://localhost:7330</code>.</div>
+    <div class="note warn"><i class="fa-solid fa-circle-info"></i> <b>Heads up:</b> inside the claude.ai preview the sandbox blocks both the relay socket and the camera, so it will say "relay unreachable." That's expected. To actually use STATIC, <b>download this file</b> and serve it locally:<br>
+    <code style="display:inline-block;margin-top:6px">python3 -m http.server 8000</code> &nbsp;then open&nbsp; <code>http://localhost:8000/static.html</code><br>
+    <span style="opacity:.8">localhost counts as a secure context, so the camera works with no HTTPS. Opening the raw file (file://) won't grant camera access in most browsers — use the localhost route.</span></div>
+  </div>
+
+  <div class="btnrow">
+    <button class="btn" id="goLobby"><i class="fa-solid fa-satellite-dish"></i> Go on-air</button>
+    <button class="btn ghost sm" id="copyPassport"><i class="fa-regular fa-id-card"></i> Copy passport</button>
+    <button class="btn ghost sm" id="loadPassport"><i class="fa-solid fa-file-import"></i> Load passport</button>
+  </div>
+  <div class="hint" style="margin-top:8px">A <b>passport</b> is your whole profile crammed into one shareable string. Paste it back next time instead of logging in. It lives only with you.</div>
+</section>
+
+<!-- ============ SCREEN 2: LOBBY ============ -->
+<section class="wrap scrim" id="screenLobby">
+  <div class="panel dk">
+    <div class="note warn hidden" id="connBanner"></div>
+    <div class="lobby-head">
+      <div>
+        <div class="kick">// TUNED TO</div>
+        <div class="freq" id="freqLabel">#commons</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <input type="text" id="freqInput" style="width:160px" placeholder="#frequency">
+        <button class="btn cyan sm" id="tuneBtn"><i class="fa-solid fa-radio"></i> Tune</button>
+      </div>
+    </div>
+    <div class="hint" style="color:var(--bone-dim)">A frequency is just a shared channel name. Anyone on the same frequency shares this lobby. Default <b>#commons</b>. Pick a private word to make a hidden room.</div>
+
+    <label class="fld">HOW DO YOU WANT TO BE PAIRED?</label>
+    <div class="seg" id="modeSeg">
+      <button data-mode="roulette" class="sel">Roulette</button>
+      <button data-mode="similar">Same wavelength</button>
+      <button data-mode="opposite">Opposite</button>
+      <button data-mode="complementary">Complementary</button>
+      <button data-mode="filter">Filter</button>
+      <button data-mode="browse">Browse lobby</button>
+    </div>
+    <div class="hint" id="modeHint" style="color:var(--bone-dim)">Roulette: connect to anyone waiting, completely at random.</div>
+
+    <div id="filterBox" class="hidden" style="margin-top:12px">
+      <label class="fld">MUST AGREE ON</label>
+      <div class="chips" id="filterAxes"></div>
+      <div class="reveal-row" style="margin-top:10px;justify-content:flex-start;gap:10px">
+        <span class="eye" id="needTag">must share a tag/fandom: NO</span>
+      </div>
+    </div>
+
+    <div class="btnrow">
+      <button class="btn" id="autoBtn"><i class="fa-solid fa-shuffle"></i> Find me a match</button>
+      <button class="btn ghost sm" id="leaveLobby"><i class="fa-solid fa-arrow-left"></i> Back</button>
+      <span class="status on" id="poolCount" style="margin-left:auto"><i class="fa-solid fa-users"></i> 0 waiting</span>
+    </div>
+    <div class="note warn"><i class="fa-solid fa-triangle-exclamation"></i> This demo runs on the public CLASP relay. Don't share anything you wouldn't shout in a public square. Camera/mic stay peer-to-peer and never touch the relay.</div>
+  </div>
+
+  <div id="browseWrap" class="hidden">
+    <h3 style="margin-top:22px">Who's waiting <span style="font-family:var(--mono);color:var(--cyan)">// live</span></h3>
+    <div class="cards" id="lobbyCards"></div>
+    <div class="empty hidden" id="lobbyEmpty">// no signal // open another tab or send a friend your frequency</div>
+  </div>
+  <div class="log" id="lobbyLog">booting...</div>
+</section>
+
+<!-- ============ SCREEN 3: CALL ============ -->
+<section class="wrap scrim" id="screenCall">
+  <div class="lobby-head" style="margin-bottom:14px">
+    <div><div class="kick">// ON-AIR IN</div><div class="freq" id="roomLabel">room</div></div>
+    <div class="status on" id="peerStatus">connecting...</div>
+  </div>
+
+  <div class="vid-grid" id="vidGrid">
+    <div class="vbox me">
+      <video id="localVideo" autoplay muted playsinline></video>
+      <div class="vlabel" id="meLabel">YOU</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn cyan sm" id="micBtn"><i class="fa-solid fa-microphone"></i> Mute</button>
+    <button class="btn cyan sm" id="camBtn"><i class="fa-solid fa-video"></i> Cam off</button>
+    <button class="btn rec sm" id="recBtn"><i class="fa-solid fa-circle"></i> Record</button>
+    <button class="btn sm" id="nextBtn"><i class="fa-solid fa-forward"></i> Next</button>
+    <button class="btn ghost sm" id="blockBtn"><i class="fa-solid fa-ban"></i> Block + report</button>
+    <button class="btn ghost sm" id="hangBtn"><i class="fa-solid fa-phone-slash"></i> Hang up</button>
+  </div>
+  <div class="log" id="callLog"></div>
+</section>
+
+<!-- incoming ring -->
+<div class="ring" id="ring">
+  <div class="box">
+    <div class="kick" style="color:var(--rec)">// INCOMING SIGNAL</div>
+    <h3 id="ringWho" style="margin:6px 0">someone</h3>
+    <p id="ringWhy" style="font-family:var(--code);font-size:13px"></p>
+    <div class="btnrow" style="justify-content:center">
+      <button class="btn" id="ringAccept"><i class="fa-solid fa-phone"></i> Connect</button>
+      <button class="btn ghost sm" id="ringDecline">Pass</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  STATIC &middot; signaling + presence over <a href="https://github.com/lumencanvas/clasp">CLASP</a> &middot; media peer-to-peer over WebRTC &middot; no accounts, no server, no logs you didn't make yourself
+</footer>
+
+<script>
+"use strict";
+/* ====================================================================
+   STATIC — randomized / discoverable WebRTC video chat over CLASP.
+   Signaling plane: CLASP relay (presence, lobby cards, SDP/ICE).
+   Media plane:     WebRTC peer connections, direct between browsers.
+   The relay never sees your camera, mic, or your match-only fields.
+   ==================================================================== */
+
+const RELAY = 'wss://relay.clasp.to';
+const ICE_SERVERS = [
+  { urls:'stun:stun.l.google.com:19302' },
+  { urls:'stun:stun1.l.google.com:19302' },
+];
+
+/* ---- descriptor option lists ---- */
+const OPTS = {
+  politics: ['','Far left','Left','Center-left','Center','Center-right','Right','Far right','Apolitical','Other'],
+  religion: ['','Agnostic','Atheist','Buddhist','Christian','Hindu','Jewish','Muslim','Pagan','Spiritual','Other','Prefer not to say'],
+  gender:   ['','Woman','Man','Non-binary','Trans woman','Trans man','Genderfluid','Agender','Other','Prefer not to say'],
+  orientation:['','Straight','Gay','Lesbian','Bisexual','Pansexual','Asexual','Queer','Questioning','Other','Prefer not to say'],
+};
+const LANGS = ['','Arabic','Bengali','Bulgarian','Burmese','Cantonese','Catalan','Croatian','Czech','Danish','Dutch','English','Estonian','Filipino','Finnish','French','German','Greek','Gujarati','Hausa','Hebrew','Hindi','Hungarian','Icelandic','Igbo','Indonesian','Italian','Japanese','Javanese','Kannada','Kazakh','Khmer','Korean','Kurdish','Lao','Latvian','Lithuanian','Malay','Malayalam','Mandarin','Marathi','Mongolian','Nepali','Norwegian','Pashto','Persian','Polish','Portuguese','Punjabi','Romanian','Russian','Serbian','Sinhala','Slovak','Slovenian','Somali','Spanish','Swahili','Swedish','Tagalog','Tamil','Telugu','Thai','Turkish','Ukrainian','Urdu','Uzbek','Vietnamese','Welsh','Yoruba','Zulu','Other'];
+// political axis as an ordinal scale so "opposite" is meaningful
+const POL_SCALE = {'Far left':0,'Left':1,'Center-left':2,'Center':3,'Center-right':4,'Right':5,'Far right':6};
+
+/* ---- app state ---- */
+const S = {
+  client:null, sid:null, freq:'commons', mode:'roulette',
+  profile:{ handle:'', country:'', state:'', language:'', politics:'', religion:'', gender:'', orientation:'', fandoms:[], tags:[] },
+  reveal:{ country:true, state:true, language:true, politics:true, religion:false, gender:true, orientation:false },
+  isAdult:false,
+  filter:{ axes:new Set(), needTag:false },
+  pool:new Map(),            // sid -> card
+  blocked:new Set(),         // local-only blacklist (session)
+  recentlyLeft:new Set(),    // skip cooldown
+  // call
+  room:null, peers:new Map(), peerVideos:new Map(), localStream:null, camStream:null,
+  audioOn:true, camOn:true,
+  // subscriptions to tear down
+  lobbyUnsubs:[], roomUnsubs:[], autoTimer:null, heartbeat:null, pruneTimer:null,
+  waitTimer:null, resumeAuto:false,
+  // recording
+  recorder:null, recChunks:[], recCanvas:null, recRAF:null, recAudioCtx:null,
+  // places data
+  countries:[], states:[], countryIso:{}, placesReady:false,
+};
+window.S = S;
+
+/* ---- tiny helpers ---- */
+const $ = s => document.querySelector(s);
+const el = (t,c)=>{const e=document.createElement(t); if(c)e.className=c; return e;};
+const rid = (n=8)=>Math.random().toString(36).slice(2,2+n);
+function show(screen){ ['Setup','Lobby','Call'].forEach(s=>$('#screen'+s).classList.toggle('show', s===screen)); }
+function logTo(id,m){ const e=$(id); if(!e)return; e.textContent += '\n'+m; e.scrollTop=e.scrollHeight; }
+const lobbyLog=m=>logTo('#lobbyLog',m), callLog=m=>logTo('#callLog',m);
+function ns(...p){ return '/static/'+S.freq+'/'+p.join('/'); }
+
+/* ====================================================================
+   PROFILE UI
+   ==================================================================== */
+function fillSelect(id,arr,placeholder){
+  const sel=$(id); sel.innerHTML='';
+  arr.forEach(v=>{ const o=el('option'); o.value=v; o.textContent=v===''?placeholder:v; sel.appendChild(o); });
+}
+
+/* ---- places: fetch real country + state/province data from jsDelivr ---- */
+const PLACES_BASE='https://cdn.jsdelivr.net/npm/country-state-city@3.2.1/lib/assets/';
+async function loadPlaces(){
+  const cSel=$('#f_country'), sSel=$('#f_state');
+  try{
+    const [c,s]=await Promise.all([
+      withTimeout(fetch(PLACES_BASE+'country.json').then(r=>r.json()),9000,'country data'),
+      withTimeout(fetch(PLACES_BASE+'state.json').then(r=>r.json()),12000,'state data'),
+    ]);
+    S.countries=c.sort((a,b)=>a.name.localeCompare(b.name));
+    S.states=s; S.placesReady=true;
+    cSel.innerHTML='<option value="">— pick or skip —</option>';
+    S.countries.forEach(co=>{
+      S.countryIso[co.name]=co.isoCode;
+      const o=el('option'); o.value=co.name; o.textContent=(co.flag?co.flag+' ':'')+co.name; cSel.appendChild(o);
+    });
+    cSel.addEventListener('change',()=>populateStates(cSel.value));
+    populateStates(S.profile.country||'');
+  }catch(e){
+    // graceful fallback: turn the selects into free-text inputs
+    swapToText('#f_country','e.g. USA'); swapToText('#f_state','e.g. Arizona');
+    console.warn('places data unavailable, using text inputs:',e.message);
+  }
+}
+function populateStates(countryName){
+  const sSel=$('#f_state'); if(!sSel||sSel.tagName!=='SELECT') return;
+  const iso=S.countryIso[countryName];
+  sSel.innerHTML='';
+  if(!iso){ sSel.innerHTML='<option value="">— pick a country first —</option>'; return; }
+  const list=S.states.filter(st=>st.countryCode===iso).sort((a,b)=>a.name.localeCompare(b.name));
+  const ph=el('option'); ph.value=''; ph.textContent= list.length?'— pick or skip —':'— no subdivisions —'; sSel.appendChild(ph);
+  list.forEach(st=>{ const o=el('option'); o.value=st.name; o.textContent=st.name; sSel.appendChild(o); });
+}
+function swapToText(sel,ph){
+  const old=$(sel); if(!old||old.tagName!=='SELECT') return;
+  const inp=el('input'); inp.type='text'; inp.id=old.id; inp.maxLength=40; inp.placeholder=ph;
+  old.replaceWith(inp);
+}
+function initProfileUI(){
+  fillSelect('#f_politics',OPTS.politics,'— pick or skip —');
+  fillSelect('#f_religion',OPTS.religion,'— pick or skip —');
+  fillSelect('#f_gender',OPTS.gender,'— pick or skip —');
+  fillSelect('#f_orientation',OPTS.orientation,'— pick or skip —');
+  fillSelect('#f_language',LANGS,'— pick or skip —');
+  loadPlaces();
+
+  document.querySelectorAll('.eye[data-rev]').forEach(e=>{
+    e.addEventListener('click',()=>{
+      const k=e.dataset.rev; S.reveal[k]=!S.reveal[k];
+      e.classList.toggle('shown',S.reveal[k]); e.classList.toggle('hidden',!S.reveal[k]);
+      e.textContent=S.reveal[k]?'shown':'match-only';
+    });
+  });
+  chipInput('#f_fandom','#fandomChips','fandoms');
+  chipInput('#f_tags','#tagChips','tags');
+
+  $('#ageGate').addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b)return;
+    $('#ageGate').querySelectorAll('button').forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel'); S.isAdult = b.dataset.age==='yes';
+  });
+
+  $('#goLobby').addEventListener('click',enterLobbyFromSetup);
+  $('#copyPassport').addEventListener('click',copyPassport);
+  $('#loadPassport').addEventListener('click',loadPassport);
+}
+function chipInput(inputSel,chipsSel,key){
+  const inp=$(inputSel), box=$(chipsSel);
+  const render=()=>{
+    box.innerHTML='';
+    S.profile[key].forEach((t,i)=>{
+      const c=el('span','chip'); c.innerHTML=t+' <span class="x"><i class="fa-solid fa-xmark"></i></span>';
+      c.querySelector('.x').addEventListener('click',()=>{ S.profile[key].splice(i,1); render(); });
+      box.appendChild(c);
+    });
+  };
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===','){
+      e.preventDefault();
+      const v=inp.value.trim().toLowerCase().replace(/[^a-z0-9 \-]/g,'');
+      if(v && !S.profile[key].includes(v) && S.profile[key].length<12){ S.profile[key].push(v); render(); }
+      inp.value='';
+    }
+  });
+}
+function readProfileFromForm(){
+  S.profile.handle = $('#f_handle').value.trim();
+  S.profile.country= ($('#f_country')?.value||'').trim();
+  S.profile.state  = ($('#f_state')?.value||'').trim();
+  S.profile.language=($('#f_language')?.value||'').trim();
+  S.profile.politics=$('#f_politics').value;
+  S.profile.religion=$('#f_religion').value;
+  S.profile.gender = $('#f_gender').value;
+  S.profile.orientation=$('#f_orientation').value;
+}
+function writeProfileToForm(){
+  $('#f_handle').value=S.profile.handle||'';
+  // country/state may be selects (places loaded) or text inputs (fallback)
+  const cSel=$('#f_country');
+  if(cSel){ cSel.value=S.profile.country||''; if(cSel.tagName==='SELECT' && S.placesReady){ populateStates(S.profile.country||''); } }
+  const sSel=$('#f_state'); if(sSel) sSel.value=S.profile.state||'';
+  $('#f_language').value=S.profile.language||'';
+  $('#f_politics').value=S.profile.politics||'';
+  $('#f_religion').value=S.profile.religion||'';
+  $('#f_gender').value=S.profile.gender||'';
+  $('#f_orientation').value=S.profile.orientation||'';
+  ['fandoms','tags'].forEach(k=>{
+    const box=$(k==='fandoms'?'#fandomChips':'#tagChips'); box.innerHTML='';
+    (S.profile[k]||[]).forEach((t,i)=>{
+      const c=el('span','chip'); c.innerHTML=t+' <span class="x"><i class="fa-solid fa-xmark"></i></span>';
+      c.querySelector('.x').addEventListener('click',()=>{ S.profile[k].splice(i,1); writeProfileToForm(); });
+      box.appendChild(c);
+    });
+  });
+  Object.keys(S.reveal).forEach(k=>{
+    const e=document.querySelector('.eye[data-rev="'+k+'"]'); if(!e)return;
+    e.classList.toggle('shown',S.reveal[k]); e.classList.toggle('hidden',!S.reveal[k]);
+    e.textContent=S.reveal[k]?'shown':'match-only';
+  });
+}
+
+/* ---- passport: profile -> shareable string ---- */
+function copyPassport(){
+  readProfileFromForm();
+  const blob={ p:S.profile, r:S.reveal };
+  const str='STATIC1.'+btoa(unescape(encodeURIComponent(JSON.stringify(blob))));
+  navigator.clipboard?.writeText(str).then(
+    ()=>flash($('#copyPassport'),'copied!'),
+    ()=>window.prompt('Copy your passport:',str)
+  );
+  if(!navigator.clipboard) window.prompt('Copy your passport:',str);
+}
+function loadPassport(){
+  const str=(window.prompt('Paste a STATIC passport:')||'').trim();
+  if(!str.startsWith('STATIC1.')) return;
+  try{
+    const blob=JSON.parse(decodeURIComponent(escape(atob(str.slice(8)))));
+    S.profile=Object.assign(S.profile,blob.p||{});
+    S.reveal=Object.assign(S.reveal,blob.r||{});
+    writeProfileToForm();
+    flash($('#loadPassport'),'loaded!');
+  }catch(e){ alert('That passport is scrambled.'); }
+}
+function flash(btn,txt){ const o=btn.innerHTML; btn.innerHTML=txt; setTimeout(()=>btn.innerHTML=o,1200); }
+
+/* ====================================================================
+   MATCH MODEL — shared match card + symmetric scoring
+   ==================================================================== */
+// What we publish: display fields (only revealed ones) + a match vector
+// (bucketed values for ALL set fields) + our mode + filter spec.
+function buildCard(){
+  const p=S.profile;
+  const display={ handle:p.handle||('anon-'+S.sid.slice(0,4)) };
+  ['country','state','language','politics','gender','orientation','religion'].forEach(k=>{
+    if(S.reveal[k] && p[k]) display[k]=p[k];
+  });
+  display.fandoms=p.fandoms.slice(0,6);
+  display.tags=p.tags.slice(0,6);
+  // match vector: present even if hidden from display
+  const v={
+    politics:p.politics||null, religion:p.religion||null, gender:p.gender||null,
+    orientation:p.orientation||null, language:p.language||null,
+    country:p.country?p.country.toLowerCase():null, state:p.state?p.state.toLowerCase():null,
+    fandoms:p.fandoms.map(x=>x.toLowerCase()), tags:p.tags.map(x=>x.toLowerCase()),
+  };
+  return {
+    sid:S.sid, ts:Date.now(), mode:S.mode,
+    filter:{ axes:[...S.filter.axes], needTag:S.filter.needTag },
+    display, v,
+  };
+}
+
+// distance 0..1 between two match vectors across the axes that exist on both
+function distance(a,b){
+  let parts=[];
+  // political: ordinal
+  if(a.politics!=null && b.politics!=null && POL_SCALE[a.politics]!=null && POL_SCALE[b.politics]!=null){
+    parts.push(Math.abs(POL_SCALE[a.politics]-POL_SCALE[b.politics])/6);
+  }
+  // categorical sameness axes
+  ['religion','gender','orientation','language','country','state'].forEach(k=>{
+    if(a[k]!=null && b[k]!=null) parts.push(a[k]===b[k]?0:1);
+  });
+  // tags+fandoms: 1 - Jaccard
+  const setA=new Set([...(a.tags||[]),...(a.fandoms||[])]);
+  const setB=new Set([...(b.tags||[]),...(b.fandoms||[])]);
+  if(setA.size||setB.size){
+    const inter=[...setA].filter(x=>setB.has(x)).length;
+    const uni=new Set([...setA,...setB]).size||1;
+    parts.push(1-inter/uni);
+  }
+  if(!parts.length) return 0.5; // nothing comparable -> neutral
+  return parts.reduce((s,x)=>s+x,0)/parts.length;
+}
+function sharesTag(a,b){
+  const setA=new Set([...(a.tags||[]),...(a.fandoms||[])]);
+  return [...(b.tags||[]),...(b.fandoms||[])].some(x=>setA.has(x));
+}
+// does `viewer` (a card) accept `cand` (a card) under viewer's own rules?
+function accepts(viewer,cand){
+  if(viewer.mode==='roulette'||viewer.mode==='browse') return true;
+  if(viewer.mode==='filter'){
+    for(const ax of (viewer.filter.axes||[])){
+      if(viewer.v[ax]!=null && cand.v[ax]!=null && viewer.v[ax]!==cand.v[ax]) return false;
+    }
+    if(viewer.filter.needTag && !sharesTag(viewer,cand)) return false;
+    return true;
+  }
+  if(viewer.mode==='complementary'){ return sharesTag(viewer,cand); }
+  return true; // similar / opposite accept anyone; they just rank
+}
+// my preference score for a candidate (higher = better), respecting my mode
+function score(mine,cand){
+  const d=distance(mine.v,cand.v);
+  switch(mine.mode){
+    case 'similar': return 1-d;
+    case 'opposite': return d;
+    case 'complementary':{
+      // shared culture + ideological distance
+      const tagBoost=sharesTag(mine,cand)?0.5:0;
+      let pol=0.5;
+      if(mine.v.politics!=null&&cand.v.politics!=null&&POL_SCALE[mine.v.politics]!=null&&POL_SCALE[cand.v.politics]!=null)
+        pol=Math.abs(POL_SCALE[mine.v.politics]-POL_SCALE[cand.v.politics])/6;
+      return tagBoost+pol*0.5;
+    }
+    case 'filter': return 1-d; // among eligible, prefer nearest
+    default: return Math.random(); // roulette / browse
+  }
+}
+function matchPct(mine,cand){
+  // a friendly 0-100 readout that adapts to mode
+  let s;
+  switch(mine.mode){
+    case 'opposite': s=distance(mine.v,cand.v); break;
+    case 'complementary': s=score(mine,cand); break;
+    case 'roulette': case 'browse': s=1-distance(mine.v,cand.v); break;
+    default: s=1-distance(mine.v,cand.v);
+  }
+  return Math.round(Math.max(0,Math.min(1,s))*100);
+}
+
+/* ====================================================================
+   CONNECT + LOBBY
+   ==================================================================== */
+async function connectRelay(url){
+  url=(url||RELAY).toString().trim();
+  if(typeof CLASP==='undefined'||typeof CLASP.Clasp!=='function'){
+    setNet(false,'library blocked');
+    lobbyLog('!! CLASP library failed to load — the CDN was blocked. Download this file and open it on http://localhost.');
+    return false;
+  }
+  try{
+    setNet(false,'dialing relay…');
+    if(S.client){ try{S.client.close();}catch(e){} S.client=null; }
+    const c=new CLASP.Clasp(url,{ name:'static-app', features:['param','event','stream'], reconnect:true, connectionTimeout:8000 });
+    await withTimeout(c.connect(8000),9000,'relay connect');
+    S.client=c; S.sid=c.session||('sid-'+rid(10));
+    c.onDisconnect && c.onDisconnect(()=>setNet(false,'reconnecting…'));
+    c.onConnect && c.onConnect(()=>setNet(true,'on-air'));
+    setNet(true,'on-air');
+    lobbyLog('connected to '+url+' as '+S.sid.slice(0,8));
+    return true;
+  }catch(e){
+    setNet(false,'relay unreachable');
+    lobbyLog('!! could not reach '+url+' — '+e.message);
+    return false;
+  }
+}
+function withTimeout(p,ms,what){
+  return Promise.race([ p, new Promise((_,rej)=>setTimeout(()=>rej(new Error((what||'op')+' timed out after '+ms+'ms')),ms)) ]);
+}
+function setNet(on,txt){
+  const e=$('#netStatus'); e.classList.toggle('on',on);
+  e.innerHTML='<i class="fa-solid fa-tower-broadcast"></i> '+txt;
+}
+function gateLobby(connected){
+  const a=$('#autoBtn'), t=$('#tuneBtn');
+  if(a) a.disabled=!connected; if(t) t.disabled=!connected;
+}
+function setLobbyConn(state){
+  const b=$('#connBanner');
+  if(state==='connecting'){
+    b.classList.remove('hidden');
+    b.innerHTML='<i class="fa-solid fa-circle-notch fa-spin"></i> dialing the relay…';
+    gateLobby(false);
+  }else if(state==='ok'){
+    b.classList.add('hidden'); gateLobby(true);
+  }else{ // fail
+    b.classList.remove('hidden');
+    b.innerHTML='<i class="fa-solid fa-plug-circle-xmark"></i> Couldn\u2019t reach the relay. If you\u2019re viewing this inside claude.ai, the sandbox blocks the connection — <b>download this file and open it on http://localhost</b>. ';
+    const r=el('button','btn cyan sm'); r.style.marginLeft='8px'; r.innerHTML='<i class="fa-solid fa-rotate-right"></i> Retry';
+    r.addEventListener('click',async()=>{
+      setLobbyConn('connecting');
+      const ok=await connectRelay($('#f_relay').value);
+      if(ok){ joinFrequency(S.freq); setLobbyConn('ok'); } else setLobbyConn('fail');
+    });
+    b.appendChild(r);
+    gateLobby(false);
+  }
+}
+
+async function enterLobbyFromSetup(){
+  readProfileFromForm();
+  if(!S.isAdult){ alert('STATIC is 18+. Confirm you are an adult to continue.'); return; }
+  if(!S.profile.handle) S.profile.handle='anon-'+rid(4);
+  // transition immediately — never block the UI on the network
+  show('Lobby'); initLobbyUI(); setLobbyConn('connecting');
+  const ok=await connectRelay($('#f_relay').value);
+  if(ok){ joinFrequency($('#freqInput').value || S.freq); setLobbyConn('ok'); }
+  else { setLobbyConn('fail'); }
+}
+
+let lobbyUIReady=false;
+function initLobbyUI(){
+  if(lobbyUIReady) return; lobbyUIReady=true;
+
+  $('#modeSeg').addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b)return;
+    $('#modeSeg').querySelectorAll('button').forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel'); S.mode=b.dataset.mode;
+    $('#modeHint').textContent=MODE_HINTS[S.mode];
+    $('#filterBox').classList.toggle('hidden',S.mode!=='filter');
+    $('#browseWrap').classList.toggle('hidden',S.mode!=='browse');
+    $('#autoBtn').classList.toggle('hidden',S.mode==='browse');
+    republishCard();
+    if(S.mode==='browse') renderBrowse();
+  });
+
+  // filter axes chips
+  const axes=[['politics','politics'],['religion','religion'],['gender','gender'],['orientation','orientation'],['language','language'],['country','country'],['state','state']];
+  const fa=$('#filterAxes');
+  axes.forEach(([k,label])=>{
+    const c=el('span','chip'); c.textContent=label; c.style.cursor='pointer';
+    c.addEventListener('click',()=>{
+      if(S.filter.axes.has(k)){ S.filter.axes.delete(k); c.style.background='#fff'; c.style.color='var(--ink)'; }
+      else{ S.filter.axes.add(k); c.style.background='var(--ink)'; c.style.color='var(--acid)'; }
+      republishCard();
+    });
+    fa.appendChild(c);
+  });
+  $('#needTag').addEventListener('click',()=>{
+    S.filter.needTag=!S.filter.needTag;
+    $('#needTag').textContent='must share a tag/fandom: '+(S.filter.needTag?'YES':'NO');
+    $('#needTag').classList.toggle('shown',S.filter.needTag);
+    republishCard();
+  });
+
+  $('#tuneBtn').addEventListener('click',()=>joinFrequency($('#freqInput').value));
+  $('#autoBtn').addEventListener('click',startAuto);
+  $('#leaveLobby').addEventListener('click',()=>{ leaveLobby(); show('Setup'); });
+}
+const MODE_HINTS={
+  roulette:'Roulette: connect to anyone waiting, completely at random.',
+  similar:'Same wavelength: ranks waiting people by how much you have in common, picks the closest.',
+  opposite:'Opposite: deliberately pairs you with the most different person on-air. Good faith, not a debate cage.',
+  complementary:'Complementary: shared culture, clashing politics — same fandoms, opposite lean.',
+  filter:'Filter: only pair with people who agree on the axes you pick below.',
+  browse:'Browse: see everyone waiting, read their cards, and pick who to ring yourself.',
+};
+
+function joinFrequency(name){
+  name=(name||'commons').toString().trim().replace(/^#/,'').toLowerCase().replace(/[^a-z0-9\-_]/g,'')||'commons';
+  // tear down old lobby subs
+  teardownLobby();
+  S.freq=name;
+  $('#freqLabel').textContent='#'+name; $('#freqInput').value='#'+name;
+  lobbyLog('tuned to #'+name);
+
+  // Subscribe BEFORE publishing so the SNAPSHOT of waiting cards lands here.
+  S.lobbyUnsubs.push(S.client.on(ns('lobby','*','card'),(card,addr)=>{
+    const sid=addr.split('/')[5];
+    if(sid===S.sid) return;
+    if(card===null){ S.pool.delete(sid); }
+    else{ S.pool.set(sid,card); }
+    refreshPool();
+  }));
+  // invites to me
+  S.lobbyUnsubs.push(S.client.on(ns('invite',S.sid),(inv)=>{
+    if(inv && inv.from && inv.from!==S.sid) handleInvite(inv);
+  }));
+  // heartbeat + prune
+  S.heartbeat=setInterval(()=>{ if(S.client) S.client.set(ns('lobby',S.sid,'ping'),Date.now()); },5000);
+  S.lobbyUnsubs.push(S.client.on(ns('lobby','*','ping'),(t,addr)=>{
+    const sid=addr.split('/')[5]; if(sid===S.sid) return;
+    const card=S.pool.get(sid); if(card) card._ping=t;
+  }));
+  S.pruneTimer=setInterval(()=>{
+    const now=Date.now(); let changed=false;
+    for(const [sid,c] of S.pool){ if(c._ping && now-c._ping>16000){ S.pool.delete(sid); changed=true; } }
+    if(changed) refreshPool();
+  },4000);
+
+  republishCard();
+}
+function republishCard(){
+  if(!S.client||!S.sid) return;
+  S.client.set(ns('lobby',S.sid,'card'),buildCard());
+  S.client.set(ns('lobby',S.sid,'ping'),Date.now());
+}
+function refreshPool(){
+  $('#poolCount').innerHTML='<i class="fa-solid fa-users"></i> '+S.pool.size+' waiting';
+  if(S.mode==='browse') renderBrowse();
+}
+function teardownLobby(){
+  S.lobbyUnsubs.forEach(fn=>{try{fn();}catch(e){}}); S.lobbyUnsubs=[];
+  clearInterval(S.heartbeat); clearInterval(S.pruneTimer); clearInterval(S.autoTimer);
+  S.heartbeat=S.pruneTimer=S.autoTimer=null;
+  S.pool.clear();
+}
+function leaveLobby(){
+  if(S.client&&S.sid){ S.client.set(ns('lobby',S.sid,'card'),null); S.client.set(ns('lobby',S.sid,'ping'),null); }
+  teardownLobby();
+  $('#poolCount').innerHTML='<i class="fa-solid fa-users"></i> 0 waiting';
+}
+
+/* ---- BROWSE: render lobby cards, click to ring ---- */
+function renderBrowse(){
+  const wrap=$('#lobbyCards'); wrap.innerHTML='';
+  const mine=buildCard();
+  const list=[...S.pool.values()].filter(c=>!S.blocked.has(c.sid));
+  $('#lobbyEmpty').classList.toggle('hidden',list.length>0);
+  list.sort((a,b)=>matchPct(mine,b)-matchPct(mine,a));
+  list.forEach(c=>{
+    const d=c.display||{}; const card=el('div','card');
+    const pct=matchPct(mine,c);
+    let meta=[];
+    if(d.country)meta.push(d.country); if(d.state)meta.push(d.state);
+    if(d.language)meta.push(d.language);
+    if(d.politics)meta.push(d.politics); if(d.gender)meta.push(d.gender);
+    if(d.orientation)meta.push(d.orientation); if(d.religion)meta.push(d.religion);
+    const tags=[...(d.fandoms||[]),...(d.tags||[])].slice(0,6);
+    card.innerHTML=
+      '<div class="score">'+pct+'%</div>'+
+      '<div class="handle">'+esc(d.handle||'anon')+'</div>'+
+      '<div class="meta">'+(meta.map(esc).join(' &middot; ')||'<i>no descriptors shared</i>')+'</div>'+
+      '<div class="ctags">'+tags.map(t=>'<span class="ct">'+esc(t)+'</span>').join('')+'</div>';
+    const b=el('button','btn cyan sm'); b.innerHTML='<i class="fa-solid fa-phone"></i> Ring';
+    b.addEventListener('click',()=>ringPeer(c.sid));
+    card.appendChild(b);
+    wrap.appendChild(card);
+  });
+}
+function esc(s){ return (s+'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+
+/* ====================================================================
+   PAIRING — auto (serverless, deterministic) + manual ring
+   ==================================================================== */
+function startAuto(){
+  const btn=$('#autoBtn');
+  btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-circle-notch fa-spin"></i> Scanning the dial...';
+  clearInterval(S.autoTimer);
+  const tick=()=>{
+    if(S.room) return; // already matched
+    const mine=buildCard();
+    const cands=[...S.pool.values()].filter(c=>
+      !S.blocked.has(c.sid) && !S.recentlyLeft.has(c.sid) &&
+      accepts(mine,c) && accepts(c,mine)               // mutual eligibility
+    );
+    if(!cands.length){ return; }
+    cands.sort((a,b)=>score(mine,b)-score(mine,a));
+    const best=cands[0];
+    // deterministic initiator: lexicographically-lower sid sends the invite
+    if(S.sid.localeCompare(best.sid)<0){
+      const roomId=S.sid.slice(0,6)+'-'+best.sid.slice(0,6);
+      ringPeer(best.sid, roomId, true);
+    }
+    // if I'm the higher sid, I just wait for their invite (handleInvite)
+  };
+  S.autoTimer=setInterval(tick,1500); tick();
+}
+function stopAuto(){
+  clearInterval(S.autoTimer); S.autoTimer=null;
+  const btn=$('#autoBtn'); btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-shuffle"></i> Find me a match';
+}
+function ringPeer(targetSid, roomId, auto){
+  roomId = roomId || (S.sid.slice(0,6)+'-'+targetSid.slice(0,6));
+  S.client.emit(ns('invite',targetSid),{ from:S.sid, roomId, mode:S.mode, card:buildCard(), auto:!!auto });
+  lobbyLog('rang '+targetSid.slice(0,8)+' for room '+roomId);
+  if(!auto){
+    // optimistic: also enter the room so we're present when they accept
+    enterRoom(roomId);
+  }else{
+    // auto pairs: join immediately; peer auto-accepts
+    enterRoom(roomId);
+  }
+}
+let pendingInvite=null;
+function handleInvite(inv){
+  if(S.room){ return; } // busy
+  if(S.blocked.has(inv.from)) return;
+  const card=inv.card||S.pool.get(inv.from)||{display:{handle:'someone'}};
+  // Auto-accept for roulette-style auto pairing; ring UI for manual browse picks
+  if(inv.auto){
+    enterRoom(inv.roomId);
+    return;
+  }
+  pendingInvite=inv;
+  $('#ringWho').textContent=(card.display&&card.display.handle)||'someone';
+  $('#ringWhy').textContent='wants to connect on #'+S.freq;
+  $('#ring').classList.add('show');
+}
+$('#ringAccept')?.addEventListener('click',()=>{
+  $('#ring').classList.remove('show');
+  if(pendingInvite){ enterRoom(pendingInvite.roomId); pendingInvite=null; }
+});
+$('#ringDecline')?.addEventListener('click',()=>{
+  $('#ring').classList.remove('show');
+  if(pendingInvite){
+    S.recentlyLeft.add(pendingInvite.from);
+    try{ S.client.emit(ns('room',pendingInvite.roomId,'signal',pendingInvite.from),{ from:S.sid, type:'decline' }); }catch(e){}
+    pendingInvite=null;
+  }
+});
+
+/* ====================================================================
+   ROOM + WEBRTC  (pattern adapted from clasp/examples/js/video-p2p.html)
+   ==================================================================== */
+async function enterRoom(roomId){
+  if(S.room) return;
+  S.resumeAuto = !!S.autoTimer;
+  S.room=roomId; stopAuto(); leaveLobby();
+  show('Call'); $('#callLog').textContent='';
+  $('#roomLabel').textContent='#'+S.freq+' / '+roomId;
+  $('#meLabel').textContent=(S.profile.handle||'YOU').toUpperCase();
+  callLog('entering room '+roomId);
+
+  await startMedia();
+
+  // presence (params persist -> late joiners see the roster) and signaling
+  S.roomUnsubs.push(S.client.on(ns('room',roomId,'presence','*'),(data,addr)=>{
+    const peerId=addr.split('/')[6];
+    if(peerId===S.sid) return;
+    if(data===null) handlePeerLeft(peerId); else handlePeerJoined(peerId,data);
+  }));
+  S.roomUnsubs.push(S.client.on(ns('room',roomId,'signal',S.sid),(data)=>{
+    if(data && data.from && data.from!==S.sid) handleSignal(data);
+  }));
+  S.roomUnsubs.push(S.client.on(ns('room',roomId,'rec'),(data)=>{
+    const on = data && data.on;
+    $('#recDot').classList.toggle('on',!!on);
+    if(on && data.by!==S.sid) callLog('!! '+(data.by||'a peer').slice(0,8)+' started recording');
+  }));
+
+  S.client.set(ns('room',roomId,'presence',S.sid),{ handle:S.profile.handle, joinedAt:Date.now() });
+  $('#peerStatus').textContent='waiting for peer…';
+  clearTimeout(S.waitTimer);
+  S.waitTimer=setTimeout(()=>{
+    if(S.room===roomId && S.peers.size===0){
+      callLog('no answer — back to the lobby.');
+      const resume=S.resumeAuto;
+      leaveRoom(false); show('Lobby'); joinFrequency(S.freq);
+      if(resume) startAuto();
+    }
+  },28000);
+}
+
+async function startMedia(){
+  const secure = window.isSecureContext;
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    callLog('camera API unavailable'+(secure?'':' (insecure context — serve over http://localhost)')+' — using STATIC ghost stream');
+    S.localStream=makeStaticStream(S.profile.handle||'NO SIGNAL');
+    showCamWarning(!secure);
+    $('#localVideo').srcObject=S.localStream; return;
+  }
+  try{
+    S.localStream=await navigator.mediaDevices.getUserMedia({
+      video:{ width:{ideal:640}, height:{ideal:480}, frameRate:{ideal:30} }, audio:true
+    });
+    S.camStream=S.localStream;
+    callLog('camera + mic live');
+  }catch(e){
+    callLog('camera blocked ('+e.name+') — falling back to STATIC ghost stream');
+    S.localStream=makeStaticStream(S.profile.handle||'NO SIGNAL');
+    showCamWarning(!secure);
+  }
+  $('#localVideo').srcObject=S.localStream;
+}
+// canvas "dead channel" stream so the pipeline still works with no camera
+function makeStaticStream(label){
+  const cv=el('canvas'); cv.width=320; cv.height=240; const ctx=cv.getContext('2d');
+  (function draw(){
+    const img=ctx.createImageData(cv.width,cv.height); const d=img.data;
+    for(let i=0;i<d.length;i+=4){ const v=Math.random()*255; d[i]=d[i+1]=d[i+2]=v; d[i+3]=255; }
+    ctx.putImageData(img,0,0);
+    ctx.fillStyle='rgba(0,0,0,.55)'; ctx.fillRect(0,cv.height/2-22,cv.width,44);
+    ctx.fillStyle='#9dff00'; ctx.font='20px monospace'; ctx.textAlign='center';
+    ctx.fillText(label.toUpperCase().slice(0,16),cv.width/2,cv.height/2+7);
+    S._staticRAF=requestAnimationFrame(draw);
+  })();
+  const stream=cv.captureStream(12);
+  // silent audio track so addTrack(audio) doesn't fail downstream
+  try{
+    const ac=new (window.AudioContext||window.webkitAudioContext)();
+    const dst=ac.createMediaStreamDestination(); const osc=ac.createOscillator();
+    const g=ac.createGain(); g.gain.value=0; osc.connect(g); g.connect(dst); osc.start();
+    stream.addTrack(dst.stream.getAudioTracks()[0]);
+  }catch(e){}
+  return stream;
+}
+function showCamWarning(insecure){
+  if($('#camWarn')) return;
+  const n=el('div','note warn'); n.id='camWarn';
+  n.innerHTML = insecure
+    ? '<i class="fa-solid fa-lock-open"></i> No camera in an insecure context. Serve this file over <b>http://localhost</b> (e.g. <code>python3 -m http.server 8000</code>) — localhost is treated as secure, so the camera works with no HTTPS. The call still connects below using a placeholder "static" stream.'
+    : '<i class="fa-solid fa-camera-slash"></i> Camera/mic are blocked here (the claude.ai sandbox does this). The call still connects using a placeholder "static" stream. For real video, download this file and open it on http://localhost.';
+  $('#screenCall').insertBefore(n,$('#vidGrid'));
+}
+
+function handlePeerJoined(peerId,data){
+  clearTimeout(S.waitTimer); S.waitTimer=null;
+  callLog('peer joined: '+((data&&data.handle)||peerId.slice(0,8)));
+  $('#peerStatus').textContent='connected';
+  // initiator = lexicographically-larger sid creates the offer (matches repo example)
+  if(!S.peers.has(peerId) && S.sid.localeCompare(peerId)>0){
+    createPeerConnection(peerId,true,data);
+  }
+}
+function handlePeerLeft(peerId){
+  callLog('peer left: '+peerId.slice(0,8));
+  closePeer(peerId); S.peers.delete(peerId);
+  const v=S.peerVideos.get(peerId); if(v&&v.parentElement) v.parentElement.remove();
+  S.peerVideos.delete(peerId);
+  if(S.peers.size===0){ $('#peerStatus').textContent='peer hung up'; }
+}
+async function createPeerConnection(peerId,initiator,info){
+  if(S.peers.has(peerId)) return S.peers.get(peerId).connection;
+  const connection=new RTCPeerConnection({iceServers:ICE_SERVERS});
+  const iceQueue=[];
+  S.peers.set(peerId,{connection,iceQueue,info});
+
+  if(S.localStream) S.localStream.getTracks().forEach(t=>connection.addTrack(t,S.localStream));
+
+  connection.ontrack=ev=>{
+    const [remote]=ev.streams;
+    let v=S.peerVideos.get(peerId);
+    if(!v){
+      const box=el('div','vbox');
+      const handle=(info&&info.handle)||(S.peers.get(peerId)?.info?.handle)||('peer-'+peerId.slice(0,4));
+      box.innerHTML='<div class="vlabel">'+esc(handle.toUpperCase())+'</div>';
+      v=el('video'); v.autoplay=true; v.playsInline=true; box.appendChild(v);
+      $('#vidGrid').appendChild(box); S.peerVideos.set(peerId,v);
+    }
+    v.srcObject=remote;
+    try{ v.play&&v.play().catch(()=>{}); }catch(e){}
+  };
+  connection.onicecandidate=ev=>{
+    if(ev.candidate) sendSignal(peerId,{ type:'ice-candidate', candidate:{
+      candidate:ev.candidate.candidate, sdpMid:ev.candidate.sdpMid, sdpMLineIndex:ev.candidate.sdpMLineIndex
+    }});
+  };
+  connection.onconnectionstatechange=()=>{
+    const st=connection.connectionState;
+    if(st==='connected') $('#peerStatus').textContent='connected';
+    if(st==='failed'||st==='closed') handlePeerLeft(peerId);
+  };
+  if(initiator){
+    try{
+      const offer=await connection.createOffer();
+      await connection.setLocalDescription(offer);
+      sendSignal(peerId,{ type:'offer', sdp:{type:connection.localDescription.type,sdp:connection.localDescription.sdp} });
+    }catch(e){ callLog('offer error: '+e.message); }
+  }
+  return connection;
+}
+async function drainIce(peerId){
+  const p=S.peers.get(peerId); if(!p)return;
+  for(const c of p.iceQueue){ try{ await p.connection.addIceCandidate(c); }catch(e){} }
+  p.iceQueue.length=0;
+}
+function closePeer(peerId){
+  const p=S.peers.get(peerId);
+  if(p&&p.connection&&p.connection.connectionState!=='closed'){ try{p.connection.close();}catch(e){} }
+}
+function sendSignal(peerId,data){
+  S.client.emit(ns('room',S.room,'signal',peerId),{ from:S.sid, ...data });
+}
+async function handleSignal(data){
+  const { from, type }=data;
+  if(type==='decline'){
+    callLog('they passed — back to the lobby.');
+    const resume=S.resumeAuto;
+    leaveRoom(false); show('Lobby'); joinFrequency(S.freq);
+    if(resume) startAuto();
+    return;
+  }
+  if(type==='offer'){
+    const conn=await createPeerConnection(from,false,S.peers.get(from)?.info);
+    try{
+      await conn.setRemoteDescription(new RTCSessionDescription(data.sdp));
+      await drainIce(from);
+      const ans=await conn.createAnswer();
+      await conn.setLocalDescription(ans);
+      sendSignal(from,{ type:'answer', sdp:{type:conn.localDescription.type,sdp:conn.localDescription.sdp} });
+    }catch(e){ callLog('answer error: '+e.message); }
+  }else if(type==='answer'){
+    const p=S.peers.get(from);
+    if(p&&p.connection){ try{ await p.connection.setRemoteDescription(new RTCSessionDescription(data.sdp)); await drainIce(from); }catch(e){} }
+  }else if(type==='ice-candidate'){
+    const p=S.peers.get(from);
+    const cand=new RTCIceCandidate(data.candidate);
+    if(p&&p.connection&&p.connection.remoteDescription){ try{ await p.connection.addIceCandidate(cand); }catch(e){} }
+    else{
+      if(!S.peers.has(from)) S.peers.set(from,{connection:null,iceQueue:[]});
+      S.peers.get(from).iceQueue.push(cand);
+    }
+  }
+}
+
+/* ---- call controls ---- */
+function leaveRoom(blacklistPeers){
+  const room=S.room; if(!room) return;
+  clearTimeout(S.waitTimer); S.waitTimer=null;
+  if(S.client) S.client.set(ns('room',room,'presence',S.sid),null);
+  for(const [pid] of S.peers){ if(blacklistPeers) S.recentlyLeft.add(pid); closePeer(pid); }
+  S.peers.clear(); S.peerVideos.clear();
+  S.roomUnsubs.forEach(fn=>{try{fn();}catch(e){}}); S.roomUnsubs=[];
+  stopRecording(true);
+  // grid reset
+  const grid=$('#vidGrid'); while(grid.children.length>1) grid.removeChild(grid.lastChild);
+  if(S._staticRAF) cancelAnimationFrame(S._staticRAF);
+  if(S.localStream){ S.localStream.getTracks().forEach(t=>t.stop()); S.localStream=null; $('#localVideo').srcObject=null; }
+  const cw=$('#camWarn'); if(cw) cw.remove();
+  S.room=null;
+}
+$('#micBtn').addEventListener('click',()=>{
+  if(!S.localStream)return; const t=S.localStream.getAudioTracks()[0]; if(!t)return;
+  t.enabled=!t.enabled; S.audioOn=t.enabled;
+  $('#micBtn').innerHTML=S.audioOn?'<i class="fa-solid fa-microphone"></i> Mute':'<i class="fa-solid fa-microphone-slash"></i> Unmute';
+});
+$('#camBtn').addEventListener('click',()=>{
+  if(!S.localStream)return; const t=S.localStream.getVideoTracks()[0]; if(!t)return;
+  t.enabled=!t.enabled; S.camOn=t.enabled;
+  $('#camBtn').innerHTML=S.camOn?'<i class="fa-solid fa-video"></i> Cam off':'<i class="fa-solid fa-video-slash"></i> Cam on';
+});
+$('#nextBtn').addEventListener('click',()=>{
+  leaveRoom(true); show('Lobby'); joinFrequency(S.freq);
+  if(S.mode!=='browse') startAuto();
+});
+$('#hangBtn').addEventListener('click',()=>{ leaveRoom(false); show('Lobby'); joinFrequency(S.freq); });
+$('#blockBtn').addEventListener('click',()=>{
+  for(const [pid] of S.peers) S.blocked.add(pid);
+  callLog('peer blocked + reported. connection killed.');
+  leaveRoom(true); show('Lobby'); joinFrequency(S.freq);
+});
+
+/* ---- recording (consent-gated) ---- */
+$('#recBtn').addEventListener('click',()=>{ S.recorder?startRecording():confirmRecord(); });
+function confirmRecord(){
+  if(!confirm('Recording will composite everyone on the call and notify all parties with a visible REC banner. Start recording?')) return;
+  startRecording();
+}
+function startRecording(){
+  if(S.recorder) return;
+  try{
+    const cv=el('canvas'); cv.width=640; cv.height=480; const ctx=cv.getContext('2d'); S.recCanvas=cv;
+    const draw=()=>{
+      const vids=[$('#localVideo'),...S.peerVideos.values()].filter(v=>v&&v.srcObject);
+      const n=Math.max(1,vids.length); const cols=Math.ceil(Math.sqrt(n)); const rows=Math.ceil(n/cols);
+      const cw=cv.width/cols, ch=cv.height/rows;
+      ctx.fillStyle='#000'; ctx.fillRect(0,0,cv.width,cv.height);
+      vids.forEach((v,i)=>{ const x=(i%cols)*cw, y=Math.floor(i/cols)*ch;
+        try{ ctx.drawImage(v,x,y,cw,ch); }catch(e){} });
+      S.recRAF=requestAnimationFrame(draw);
+    }; draw();
+    // mix audio from all streams
+    const ac=new (window.AudioContext||window.webkitAudioContext)(); S.recAudioCtx=ac;
+    const dst=ac.createMediaStreamDestination();
+    [S.localStream,...[...S.peers.values()].map(p=>p.connection)].forEach(()=>{});
+    const streams=[S.localStream,...[...S.peerVideos.values()].map(v=>v.srcObject)].filter(Boolean);
+    streams.forEach(st=>{ if(st.getAudioTracks().length){ try{ ac.createMediaStreamSource(st).connect(dst); }catch(e){} } });
+    const mixed=new MediaStream([ cv.captureStream(24).getVideoTracks()[0], ...dst.stream.getAudioTracks() ]);
+    S.recorder=new MediaRecorder(mixed,{ mimeType:pickMime() }); S.recChunks=[];
+    S.recorder.ondataavailable=e=>{ if(e.data.size) S.recChunks.push(e.data); };
+    S.recorder.onstop=saveRecording;
+    S.recorder.start(1000);
+    S.client.set(ns('room',S.room,'rec'),{ on:true, by:S.sid });
+    $('#recDot').classList.add('on');
+    $('#recBtn').innerHTML='<i class="fa-solid fa-stop"></i> Stop';
+    callLog('recording started (all parties notified)');
+  }catch(e){ alert('Recording failed: '+e.message); }
+}
+function pickMime(){
+  const c=['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'];
+  return c.find(m=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(m))||'video/webm';
+}
+function stopRecording(silent){
+  if(!S.recorder) return;
+  try{ S.recorder.stop(); }catch(e){}
+  S.recorder=null;
+  if(S.recRAF) cancelAnimationFrame(S.recRAF);
+  if(S.recAudioCtx){ try{S.recAudioCtx.close();}catch(e){} S.recAudioCtx=null; }
+  if(S.client&&S.room) S.client.set(ns('room',S.room,'rec'),{ on:false, by:S.sid });
+  $('#recDot').classList.remove('on');
+  $('#recBtn').innerHTML='<i class="fa-solid fa-circle"></i> Record';
+  if(!silent) callLog('recording stopped');
+}
+function saveRecording(){
+  if(!S.recChunks.length) return;
+  const blob=new Blob(S.recChunks,{type:'video/webm'});
+  const url=URL.createObjectURL(blob); const a=el('a');
+  a.href=url; a.download='static-'+Date.now()+'.webm'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+  callLog('recording saved to your downloads');
+}
+
+/* ---- cleanup ---- */
+window.addEventListener('beforeunload',()=>{
+  try{ leaveRoom(false); }catch(e){}
+  try{ leaveLobby(); }catch(e){}
+  try{ S.client&&S.client.close(); }catch(e){}
+});
+
+/* ---- boot ---- */
+window.addEventListener('DOMContentLoaded',()=>{
+  setTimeout(()=>{
+    initProfileUI();
+    setNet(false, (typeof CLASP==='undefined'||typeof CLASP.Clasp!=='function') ? 'library blocked' : 'idle');
+  },80);
+});
+</script>
+</body>
+</html>

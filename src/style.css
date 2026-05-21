@@ -1,0 +1,162 @@
+@import './theme/tokens.css';
+
+/* ============================================================
+   Global base. Resets, document chrome, the CRT overlays, and a
+   small set of shared utility classes. Component-specific styles
+   live inside each .vue file as scoped styles.
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  overflow-x: hidden;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* CRT scanlines over everything. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9000;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.18) 3px,
+    rgba(0, 0, 0, 0) 4px
+  );
+  mix-blend-mode: multiply;
+  opacity: var(--scanline-opacity);
+}
+
+/* Faint film grain. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 8999;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+a {
+  color: var(--accent-2);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--accent-2);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.05;
+}
+
+h2 {
+  font-size: var(--fs-h2);
+  margin: 6px 0 2px;
+}
+
+h3 {
+  font-size: var(--fs-h3);
+  color: var(--text);
+}
+
+button {
+  font-family: inherit;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--ink);
+}
+
+/* Focus ring that stays legible on every surface. */
+:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+
+/* ---- Shared layout utilities ---- */
+.wrap {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 18px;
+}
+
+.kick {
+  font-family: var(--font-mono);
+  font-size: var(--fs-kick);
+  color: var(--accent);
+  letter-spacing: 2px;
+}
+
+.lead {
+  font-family: var(--font-body);
+  color: var(--text-dim);
+  max-width: 62ch;
+}
+
+.hint {
+  font-family: var(--font-code);
+  font-size: 12px;
+  color: var(--text-mute);
+  margin-top: 3px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-md);
+}
+
+.col {
+  flex: 1 1 220px;
+  min-width: 200px;
+}
+
+.stack > * + * {
+  margin-top: var(--gap-lg);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.spin {
+  animation: static-spin 0.9s linear infinite;
+}
+
+@keyframes static-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

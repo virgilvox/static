@@ -1,0 +1,136 @@
+/* ============================================================
+   STATIC design tokens.
+   Every color, font, and effect the app uses is declared here as
+   a CSS custom property. Components never hardcode a hex value;
+   they reference a semantic token below. Switching the
+   data-theme attribute on <html> reskins the entire app.
+   ============================================================ */
+
+:root {
+  /* Type families. Loaded in index.html via Google Fonts. */
+  --font-display: 'Permanent Marker', cursive;
+  --font-body: 'Special Elite', monospace;
+  --font-mono: 'VT323', monospace;
+  --font-code: 'Courier Prime', monospace;
+
+  /* Type scale */
+  --fs-logo: 30px;
+  --fs-h2: 32px;
+  --fs-h3: 21px;
+  --fs-kick: 20px;
+  --fs-body: 16px;
+  --fs-mono: 18px;
+  --fs-code: 12.5px;
+
+  /* Spacing and shape */
+  --gap-xs: 6px;
+  --gap-sm: 10px;
+  --gap-md: 14px;
+  --gap-lg: 18px;
+  --gap-xl: 26px;
+  --maxw: 1100px;
+  --radius: 0px;
+  --shadow-offset: 6px;
+  --border-w: 2px;
+
+  /* Motion */
+  --press: transform 0.05s ease;
+
+  /* CRT atmosphere intensity. Themes dial these down or up. */
+  --scanline-opacity: 0.5;
+  --grain-opacity: 0.04;
+}
+
+/* ---- Dead channel: the original pirate radio look ---- */
+:root,
+[data-theme='dead-channel'] {
+  --bg: #0a0a0a;
+  --bg-raised: #141210;
+  --surface: #ece6d6;
+  --surface-dim: #cfc7b2;
+  --on-surface: #1a1a1a;
+
+  --text: #ece6d6;
+  --text-dim: #cfc7b2;
+  --text-mute: #7d776a;
+
+  --accent: #9dff00;
+  --accent-strong: #5f9b00;
+  --accent-2: #00e5ff;
+  --accent-2-strong: #0094a8;
+  --danger: #ff2d2d;
+
+  --ink: #1a1a1a;
+  --border: #1a1a1a;
+  --border-strong: #9dff00;
+  --shadow: #9dff00;
+  --shadow-dark: rgba(0, 0, 0, 0.6);
+
+  --scanline-opacity: 0.5;
+  --grain-opacity: 0.04;
+}
+
+/* ---- Amber: warm monochrome terminal ---- */
+[data-theme='amber'] {
+  --bg: #120a02;
+  --bg-raised: #1c1206;
+  --surface: #1c1206;
+  --surface-dim: #2a1c0a;
+  --on-surface: #ffb000;
+
+  --text: #ffb000;
+  --text-dim: #c98a00;
+  --text-mute: #7a5500;
+
+  --accent: #ffb000;
+  --accent-strong: #c98a00;
+  --accent-2: #ff7b00;
+  --accent-2-strong: #c95e00;
+  --danger: #ff3b1f;
+
+  --ink: #ffb000;
+  --border: #5a3d00;
+  --border-strong: #ffb000;
+  --shadow: rgba(255, 176, 0, 0.5);
+  --shadow-dark: rgba(0, 0, 0, 0.7);
+
+  --scanline-opacity: 0.6;
+  --grain-opacity: 0.05;
+}
+
+/* ---- Clean: high contrast, calmer, for low-vision and bright rooms ---- */
+[data-theme='clean'] {
+  --bg: #0c0e12;
+  --bg-raised: #161a22;
+  --surface: #f4f5f7;
+  --surface-dim: #d7dbe2;
+  --on-surface: #11141a;
+
+  --text: #f4f5f7;
+  --text-dim: #c0c6d2;
+  --text-mute: #8a93a3;
+
+  --accent: #5ce1a6;
+  --accent-strong: #2fae78;
+  --accent-2: #5cc8ff;
+  --accent-2-strong: #2f8fce;
+  --danger: #ff5a5a;
+
+  --ink: #11141a;
+  --border: #11141a;
+  --border-strong: #5ce1a6;
+  --shadow: rgba(92, 225, 166, 0.55);
+  --shadow-dark: rgba(0, 0, 0, 0.5);
+
+  --scanline-opacity: 0.12;
+  --grain-opacity: 0.015;
+}
+
+/* Reduced motion and atmosphere for users who ask for it. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --press: none;
+    --scanline-opacity: 0.18;
+    --grain-opacity: 0.02;
+  }
+}
