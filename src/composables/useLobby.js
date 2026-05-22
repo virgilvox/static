@@ -22,9 +22,27 @@ const filter = reactive({ axes: new Set(), needTag: false })
 const scanning = ref(false)
 const pendingInvite = ref(null)
 
-// Blocked is persisted across sessions; recentlyLeft is a short session cooldown.
+// Blocked is persisted across sessions. recentlyLeft is a short, expiring
+// cooldown after a next, pass, or block, so you skip that person briefly but can
+// be paired again once it lapses. Without expiry, two people whose ids put the
+// next-er on the non-initiating side would deadlock forever.
+const COOLDOWN_MS = 8000
 const blocked = reactive(new Set(load(KEYS.blocked, [])))
-const recentlyLeft = new Set()
+const recentlyLeft = new Map() // sid -> expiry timestamp
+
+function coolDown(sid) {
+  if (sid) recentlyLeft.set(sid, Date.now() + COOLDOWN_MS)
+}
+
+function isCoolingDown(sid) {
+  const exp = recentlyLeft.get(sid)
+  if (!exp) return false
+  if (Date.now() > exp) {
+    recentlyLeft.delete(sid)
+    return false
+  }
+  return true
+}
 
 let unsubs = []
 let heartbeat = null
@@ -145,7 +163,7 @@ function startAuto() {
     const cands = poolList.value.filter(
       (c) =>
         c.mode !== 'browse' && // browse users pick manually, do not yank them in
-        !recentlyLeft.has(c.sid) &&
+        !isCoolingDown(c.sid) &&
         accepts(mine, c) &&
         accepts(c, mine)
     )
@@ -206,7 +224,7 @@ function declineInvite() {
   const inv = pendingInvite.value
   pendingInvite.value = null
   if (inv) {
-    recentlyLeft.add(inv.from)
+    coolDown(inv.from)
     try {
       clasp.emit(ns(screen.freq.value, 'room', inv.roomId, 'signal', inv.from), {
         from: clasp.sessionId.value,
@@ -222,7 +240,7 @@ function declineInvite() {
 function block(sid) {
   if (!sid) return
   blocked.add(sid)
-  recentlyLeft.add(sid)
+  coolDown(sid)
   save(KEYS.blocked, [...blocked])
   pool.delete(sid)
 }
@@ -233,7 +251,7 @@ function unblock(sid) {
 }
 
 function markRecentlyLeft(sid) {
-  if (sid) recentlyLeft.add(sid)
+  coolDown(sid)
 }
 
 function teardown() {
