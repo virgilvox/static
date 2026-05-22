@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ShieldHalf } from 'lucide-vue-next'
 import { useProfile } from '../../composables/useProfile.js'
-import { OPTS, LANGS } from '../../lib/constants.js'
+import { OPTS, LANGS, FANDOM_SUGGESTIONS, TAG_SUGGESTIONS } from '../../lib/constants.js'
 import { loadPlaces, statesForCountry } from '../../lib/places.js'
 import PanelCard from '../ui/PanelCard.vue'
 import FieldLabel from '../ui/FieldLabel.vue'
@@ -112,7 +112,8 @@ const langs = LANGS
     <FieldLabel text="FANDOMS / OBSESSIONS" />
     <ChipInput
       :model-value="profile.fandoms"
-      placeholder="type + enter: dune, formula1, black midi"
+      :suggestions="FANDOM_SUGGESTIONS"
+      placeholder="pick or type your own: dune, formula 1, black midi"
       @add="(v) => addTag('fandoms', v)"
       @remove="(i) => removeTag('fandoms', i)"
     />
@@ -120,7 +121,8 @@ const langs = LANGS
     <FieldLabel text="FREE TAGS" />
     <ChipInput
       :model-value="profile.tags"
-      placeholder="type + enter: nightowl, rustlang, vinyl, anarchist"
+      :suggestions="TAG_SUGGESTIONS"
+      placeholder="pick or type your own: nightowl, rustlang, vinyl, anarchist"
       @add="(v) => addTag('tags', v)"
       @remove="(i) => removeTag('tags', i)"
     />

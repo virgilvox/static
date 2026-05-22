@@ -50,6 +50,32 @@ export const REACTIONS = [
   { id: 'fire', label: 'fire' },
 ]
 
+// Suggestion lists for the fandom and tag comboboxes. Roughly popularity
+// ordered so the empty-focus sample is sensible. These are starting points;
+// any custom value can still be typed in.
+export const FANDOM_SUGGESTIONS = [
+  'dune', 'star wars', 'star trek', 'lord of the rings', 'marvel', 'dc comics', 'harry potter',
+  'game of thrones', 'the witcher', 'stranger things', 'doctor who', 'studio ghibli', 'one piece',
+  'naruto', 'attack on titan', 'demon slayer', 'jujutsu kaisen', 'dragon ball', 'evangelion',
+  'pokemon', 'zelda', 'final fantasy', 'elden ring', 'dark souls', 'baldurs gate', 'minecraft',
+  'league of legends', 'valorant', 'overwatch', 'counter-strike', 'dungeons and dragons',
+  'magic the gathering', 'warhammer 40k', 'formula 1', 'nba', 'nfl', 'premier league', 'ufc',
+  'taylor swift', 'radiohead', 'kendrick lamar', 'the beatles', 'pink floyd', 'daft punk',
+  'black midi', 'bts', 'blackpink', 'k-pop', 'jazz', 'techno', 'breaking bad', 'twin peaks',
+  'the sopranos', 'rick and morty', 'blade runner', 'cyberpunk', 'tolkien', 'true crime', 'anime',
+]
+
+export const TAG_SUGGESTIONS = [
+  'nightowl', 'early bird', 'insomniac', 'vinyl', 'coffee', 'tea', 'matcha', 'vegan', 'vegetarian',
+  'gym', 'running', 'cycling', 'hiking', 'climbing', 'surfing', 'skateboarding', 'yoga', 'meditation',
+  'gamer', 'artist', 'musician', 'producer', 'writer', 'poet', 'filmmaker', 'photographer', 'reader',
+  'bookworm', 'coder', 'rustlang', 'python', 'linux', 'self-hosting', 'open source', 'ai', 'startup',
+  'founder', 'student', 'phd', 'teacher', 'parent', 'dog person', 'cat person', 'plants', 'cooking',
+  'baking', 'wine', 'craft beer', 'whiskey', 'tattoos', 'thrifting', 'fashion', 'minimalist',
+  'van life', 'expat', 'polyglot', 'introvert', 'extrovert', 'anarchist', 'stoic', 'astrology',
+  'tarot', 'chess', 'retro gaming', 'synth', 'guitar', 'piano', 'singing', 'dancing',
+]
+
 export const THEMES = [
   { id: 'dead-channel', label: 'Dead channel' },
   { id: 'amber', label: 'Amber CRT' },
