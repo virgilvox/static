@@ -1,31 +1,23 @@
 # DigitalOcean App Platform spec for STATIC.
-# Deploy as a static site. No server runtime, no env secrets required.
+# Deployed as a static site, which is the cheapest option (no running instance,
+# served from the CDN). No server runtime and no secrets.
 #
 # Create once:   doctl apps create --spec .do/app.yaml
 # Update later:  doctl apps update <APP_ID> --spec .do/app.yaml
 #
-# After the first deploy, point the static.gdn domain at the app in the
-# DigitalOcean dashboard (Settings -> Domains) or uncomment the domains block.
+# The static.gdn domain is on DigitalOcean DNS, so the records and TLS
+# certificate are provisioned automatically once this app is created.
 name: static-gdn
 region: nyc
 static_sites:
   - name: web
     git:
-      repo_clone_url: https://github.com/lumencanvas/static.git
+      repo_clone_url: https://github.com/virgilvox/static.git
       branch: main
-    # If you deploy from a GitHub-connected source instead, replace the git
-    # block above with:
-    #   github:
-    #     repo: your-org/static
-    #     branch: main
-    #     deploy_on_push: true
     build_command: npm ci && npm run build
     output_dir: dist
-    catchall_document: index.html
     index_document: index.html
-    environment_slug: node-js
-# domains:
-#   - domain: static.gdn
-#     type: PRIMARY
-#   - domain: www.static.gdn
-#     type: ALIAS
+    catchall_document: index.html
+domains:
+  - domain: static.gdn
+    type: PRIMARY

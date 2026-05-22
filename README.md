@@ -88,17 +88,37 @@ npm run preview    # serve the production build locally
 
 ## Deploy to DigitalOcean App Platform
 
-The app is a static bundle. Deploy it as an App Platform static site.
+The output is a static bundle, so it deploys as an App Platform static site.
+That is the cheapest option: there is no running instance, the files are served
+from the CDN, and there are no secrets to configure (the relay is the public
+`wss://relay.clasp.to`).
+
+The spec lives in `.do/app.yaml` and points at this repository on the `main`
+branch. Create the app:
 
 ```bash
 doctl apps create --spec .do/app.yaml
 ```
 
-Then add the `static.gdn` domain under the app's Settings, Domains in the
-DigitalOcean dashboard (or uncomment the domains block in `.do/app.yaml`). Point
-the domain's nameservers or records at DigitalOcean and it issues TLS
-automatically. The default relay is the public `wss://relay.clasp.to`, so there
-are no secrets to configure.
+Push to `main` afterward and App Platform rebuilds automatically. To apply spec
+changes:
 
-A `Dockerfile` and `nginx.conf` are also included if you would rather run the
-same bundle as a container.
+```bash
+doctl apps update <APP_ID> --spec .do/app.yaml
+```
+
+### Domain and TLS
+
+`static.gdn` is on DigitalOcean DNS, and the spec lists it as the primary
+domain, so App Platform creates the DNS records and issues the TLS certificate
+on its own. The first issuance can take a few minutes. Until it is ready the app
+is reachable at its `*.ondigitalocean.app` ingress.
+
+If you host the domain elsewhere, remove the `domains` block from the spec, add
+the domain in the dashboard under Settings, Domains, and point a record at the
+app's ingress.
+
+### Container alternative
+
+A `Dockerfile` and `nginx.conf` are included if you would rather run the same
+bundle as a container instead of a static site.

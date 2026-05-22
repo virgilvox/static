@@ -22,6 +22,9 @@ let staticRAF = null
 let meterCtx = null
 let meterSource = null
 let meterRAF = null
+// The level meter only runs while the preview panel is on screen. This flag
+// survives a re-acquire (device switch) so the meter follows the new stream.
+let meterOn = false
 
 // useCall registers this so a device switch mid-call swaps the tracks on the
 // live peer connection without renegotiating.
@@ -79,7 +82,7 @@ async function acquire() {
     notice.value = ''
     applyEnabledStates()
     await enumerate()
-    startMeter()
+    if (meterOn) startMeter()
   } catch (e) {
     stream.value = makeGhostStream(prefs.handle || 'NO SIGNAL')
     usingGhost.value = true
@@ -129,6 +132,17 @@ function toggleMic() {
 }
 
 // ---- mic level meter (preview only) ----
+// Public controls, driven by the preview panel mounting and unmounting.
+function enableMeter() {
+  meterOn = true
+  startMeter()
+}
+
+function disableMeter() {
+  meterOn = false
+  stopMeter()
+}
+
 function startMeter() {
   stopMeter()
   const s = stream.value
@@ -193,6 +207,7 @@ function releaseStreamOnly() {
 
 // Full teardown. Called when leaving the lobby for setup, or on unload.
 function release() {
+  meterOn = false
   releaseStreamOnly()
   active.value = false
   usingGhost.value = false
@@ -259,6 +274,8 @@ export function useMedia() {
     toggleCam,
     toggleMic,
     enumerate,
+    enableMeter,
+    disableMeter,
     release,
     setReplaceHandler,
   }

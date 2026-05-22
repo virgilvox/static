@@ -1,4 +1,5 @@
 <script setup>
+import { onMounted, onUnmounted, watch } from 'vue'
 import { Video, VideoOff, Mic, MicOff, CameraOff, Power } from 'lucide-vue-next'
 import { useMedia } from '../../composables/useMedia.js'
 import { useProfile } from '../../composables/useProfile.js'
@@ -25,6 +26,8 @@ const {
   setMic,
   toggleCam,
   toggleMic,
+  enableMeter,
+  disableMeter,
   release,
 } = useMedia()
 const { prefs } = useProfile()
@@ -32,6 +35,13 @@ const { prefs } = useProfile()
 function labelFor(d, i, kind) {
   return d.label || `${kind} ${i + 1}`
 }
+
+// The mic meter only needs to run while this panel is visible.
+onMounted(() => {
+  if (active.value) enableMeter()
+})
+watch(active, (on) => (on ? enableMeter() : disableMeter()))
+onUnmounted(disableMeter)
 </script>
 
 <template>
