@@ -180,8 +180,19 @@ function handlePeerJoined(peerId, data) {
   clearTimeout(waitTimer)
   waitTimer = null
   peerStatus.value = 'connected'
+
+  // Record the handle from presence whether or not the connection exists yet,
+  // so the tile label is correct regardless of presence/offer arrival order.
+  const entry = peers.get(peerId) || { iceQueue: [] }
+  if (data?.handle) {
+    entry.info = { ...(entry.info || {}), handle: data.handle }
+    peers.set(peerId, entry)
+    const tile = remoteTiles.value.find((t) => t.peerId === peerId)
+    if (tile) tile.handle = data.handle
+  }
+
   // The lexicographically larger sid creates the offer and the data channel.
-  if (!peers.has(peerId) && selfId().localeCompare(peerId) > 0) {
+  if (!entry.connection && selfId().localeCompare(peerId) > 0) {
     createPeerConnection(peerId, true, data)
   }
 }

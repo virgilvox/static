@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Settings, Trash2, Check } from 'lucide-vue-next'
 import { useTheme } from '../composables/useTheme.js'
 import { useProfile } from '../composables/useProfile.js'
@@ -13,6 +13,7 @@ const { forgetMe } = useProfile()
 
 const open = ref(false)
 const confirming = ref(false)
+const root = ref(null)
 const footprint = computed(() => storageFootprint())
 
 function doForget() {
@@ -20,10 +21,20 @@ function doForget() {
   confirming.value = false
   open.value = false
 }
+
+function onDocClick(e) {
+  if (open.value && root.value && !root.value.contains(e.target)) {
+    open.value = false
+    confirming.value = false
+  }
+}
+
+onMounted(() => document.addEventListener('mousedown', onDocClick))
+onUnmounted(() => document.removeEventListener('mousedown', onDocClick))
 </script>
 
 <template>
-  <div class="settings">
+  <div ref="root" class="settings">
     <button class="gear" :aria-expanded="open" aria-label="Settings" @click="open = !open">
       <Settings />
     </button>

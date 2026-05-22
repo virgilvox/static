@@ -101,7 +101,8 @@ export function matchPct(mine, cand) {
 // shown to the other person.
 export function buildCard({ profile, reveal, sid, mode, filter }) {
   const p = profile
-  const display = { handle: p.handle || 'anon-' + sid.slice(0, 4) }
+  const id = sid || 'pending'
+  const display = { handle: p.handle || 'anon-' + id.slice(0, 4) }
   ;['country', 'state', 'language', 'politics', 'gender', 'orientation', 'religion'].forEach((k) => {
     if (reveal[k] && p[k]) display[k] = p[k]
   })
@@ -121,7 +122,7 @@ export function buildCard({ profile, reveal, sid, mode, filter }) {
   }
 
   return {
-    sid,
+    sid: id,
     ts: Date.now(),
     mode,
     filter: { axes: [...(filter?.axes || [])], needTag: !!filter?.needTag },

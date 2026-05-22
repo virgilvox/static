@@ -75,8 +75,14 @@ function joinFrequency(name) {
     clasp.on(ns(freq, 'lobby', '*', 'card'), (card, addr) => {
       const sid = card?.sid || sidBeforeTail(addr)
       if (!sid || sid === me) return
-      if (card === null) pool.delete(sid)
-      else pool.set(sid, card)
+      if (card === null) {
+        pool.delete(sid)
+      } else {
+        // Seed a freshness stamp so a card whose ping snapshot we missed can
+        // still be pruned. Live peers refresh this every few seconds.
+        if (!card._ping) card._ping = card.ts || Date.now()
+        pool.set(sid, card)
+      }
     })
   )
   unsubs.push(
@@ -129,9 +135,14 @@ function startAuto() {
   clearInterval(autoTimer)
   const tick = () => {
     if (screen.screen.value === 'call') return
+    if (!clasp.sessionId.value) return
     const mine = myCard()
     const cands = poolList.value.filter(
-      (c) => !recentlyLeft.has(c.sid) && accepts(mine, c) && accepts(c, mine)
+      (c) =>
+        c.mode !== 'browse' && // browse users pick manually, do not yank them in
+        !recentlyLeft.has(c.sid) &&
+        accepts(mine, c) &&
+        accepts(c, mine)
     )
     if (!cands.length) return
     cands.sort((a, b) => score(mine, b) - score(mine, a))
@@ -154,6 +165,7 @@ function stopAuto() {
 }
 
 function ringPeer(targetSid, roomId, auto = false) {
+  if (!clasp.sessionId.value) return
   const room = roomId || clasp.sessionId.value.slice(0, 6) + '-' + targetSid.slice(0, 6)
   clasp.emit(ns(screen.freq.value, 'invite', targetSid), {
     from: clasp.sessionId.value,

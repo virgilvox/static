@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { Radio, Shuffle, ArrowLeft, Users, TriangleAlert, PlugZap, RotateCw, Loader } from 'lucide-vue-next'
 import { useApp } from '../../composables/useApp.js'
 import { useLobby } from '../../composables/useLobby.js'
@@ -36,14 +36,14 @@ const {
 const { prefs } = useProfile()
 const { freq } = useScreen()
 
-const freqDisplay = computed(() => '#' + freq.value)
-let pendingFreq = '#' + freq.value
-
-function onFreqInput(e) {
-  pendingFreq = e.target.value
-}
+// A reactive draft so typing survives the re-renders triggered by incoming
+// lobby cards. It syncs down when the tuned frequency changes elsewhere.
+const freqInput = ref('#' + freq.value)
+watch(freq, (f) => {
+  freqInput.value = '#' + f
+})
 function tune() {
-  const name = normalizeFreq(pendingFreq)
+  const name = normalizeFreq(freqInput.value)
   prefs.lastFreq = name
   joinFrequency(name)
 }
@@ -54,7 +54,6 @@ function onMode(id) {
 }
 
 const axes = FILTER_AXES
-const filterAxesSet = computed(() => filter.axes)
 const mine = computed(() => myCard())
 
 function onFind() {
@@ -86,10 +85,9 @@ function onFind() {
         </div>
         <div class="tune">
           <input
+            v-model="freqInput"
             class="freq-input"
-            :value="freqDisplay"
             placeholder="#frequency"
-            @input="onFreqInput"
             @keydown.enter="tune"
           />
           <BaseButton variant="cyan" size="sm" @click="tune"><Radio /> Tune</BaseButton>
@@ -111,7 +109,7 @@ function onFind() {
             v-for="ax in axes"
             :key="ax"
             class="fchip"
-            :class="{ on: filterAxesSet.has(ax) }"
+            :class="{ on: filter.axes.has(ax) }"
             @click="toggleFilterAxis(ax)"
           >
             {{ ax }}

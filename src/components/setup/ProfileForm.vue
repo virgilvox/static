@@ -127,8 +127,9 @@ const langs = LANGS
 
     <CalloutNote tone="info" style="margin-top: 14px">
       <template #icon><ShieldHalf /></template>
-      Match-only fields are bucketed before they leave your machine. The other person's browser checks
-      compatibility without the raw value ever rendering on their screen.
+      Match-only fields are used to pair you but are never shown in the other person's interface. They do
+      still travel over the public relay to compute the match, so do not put anything truly sensitive in
+      any field.
     </CalloutNote>
   </PanelCard>
 </template>
