@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { Radio, Shuffle, ArrowLeft, Users, TriangleAlert, PlugZap, RotateCw, Loader } from 'lucide-vue-next'
+import { Radio, Shuffle, ArrowLeft, Users, PlugZap, RotateCw, Loader } from 'lucide-vue-next'
 import { useApp } from '../../composables/useApp.js'
 import { useLobby } from '../../composables/useLobby.js'
 import { useProfile } from '../../composables/useProfile.js'
@@ -131,12 +131,6 @@ function onFind() {
         <BaseButton variant="ghost" size="sm" @click="backToSetup"><ArrowLeft /> Back</BaseButton>
         <StatusPill :on="true" class="pool"><template #icon><Users /></template> {{ poolCount }} waiting</StatusPill>
       </div>
-
-      <CalloutNote tone="warn" dark style="margin-top: 14px">
-        <template #icon><TriangleAlert /></template>
-        This runs on the public CLASP relay. Do not share anything you would not shout in a public square.
-        Camera and mic stay peer to peer and never touch the relay.
-      </CalloutNote>
     </PanelCard>
 
     <div v-if="mode === 'browse'">

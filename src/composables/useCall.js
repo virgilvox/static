@@ -88,8 +88,14 @@ async function enterRoom(roomId, { resume = false, ringing = null } = {}) {
     clasp.on(ns(freq, 'room', roomId, 'presence', '*'), (data, addr) => {
       const peerId = addr.split('/').pop()
       if (peerId === me) return
-      if (data === null) handlePeerLeft(peerId)
-      else handlePeerJoined(peerId, data)
+      if (data === null) {
+        // Only a peer we actually have can leave. A deterministic room id can be
+        // reused, so the snapshot may replay a stale null left by a previous
+        // occupant; ignoring it keeps that from ending a fresh call instantly.
+        if (peers.has(peerId)) handlePeerLeft(peerId)
+      } else {
+        handlePeerJoined(peerId, data)
+      }
     })
   )
   roomUnsubs.push(
