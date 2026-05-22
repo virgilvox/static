@@ -87,7 +87,12 @@ function joinFrequency(name) {
   )
   unsubs.push(
     clasp.on(ns(freq, 'invite', me), (inv) => {
-      if (inv && inv.from && inv.from !== me) handleInvite(inv)
+      if (!inv || !inv.from || inv.from === me) return
+      // Ignore an invite that has aged out (it may be a replayed snapshot).
+      if (inv.ts && Date.now() - inv.ts > 30000) return
+      // Consume it so re-subscribing on a later lobby join does not replay it.
+      clasp.set(ns(freq, 'invite', me), null)
+      handleInvite(inv)
     })
   )
   unsubs.push(
@@ -167,14 +172,15 @@ function stopAuto() {
 function ringPeer(targetSid, roomId, auto = false) {
   if (!clasp.sessionId.value) return
   const room = roomId || clasp.sessionId.value.slice(0, 6) + '-' + targetSid.slice(0, 6)
-  clasp.emit(ns(screen.freq.value, 'invite', targetSid), {
-    from: clasp.sessionId.value,
-    roomId: room,
-    mode: mode.value,
-    card: myCard(),
-    auto,
-  })
-  enterRoomHandler(room)
+  // State with a short TTL is more reliable than a fire-and-forget event for a
+  // ring that waits on a human, and it auto-expires if nobody answers.
+  clasp.set(
+    ns(screen.freq.value, 'invite', targetSid),
+    { from: clasp.sessionId.value, roomId: room, mode: mode.value, card: myCard(), auto, ts: Date.now() },
+    { ttl: 30 }
+  )
+  const ringing = auto ? null : pool.get(targetSid)?.display?.handle || 'them'
+  enterRoomHandler(room, { ringing })
 }
 
 function handleInvite(inv) {
@@ -253,6 +259,8 @@ function leaveLobby() {
     clasp.set(ns(screen.freq.value, 'lobby', me, 'card'), null)
     clasp.set(ns(screen.freq.value, 'lobby', me, 'ping'), null)
   }
+  // Drop any unanswered ring so it cannot reappear over a call we just entered.
+  pendingInvite.value = null
   teardown()
 }
 

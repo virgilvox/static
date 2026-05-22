@@ -19,6 +19,10 @@ browsers and never touch the relay.
 - **Pairing modes.** Roulette, same wavelength, opposite, complementary,
   filter, and browse. The scoring is symmetric and pure, so two browsers agree
   on a match with no server deciding for them.
+- **Device preview.** Check your camera and mic in the lobby before matching,
+  pick which camera and mic to use, and watch a live level meter. The stream
+  carries straight into the call with no second prompt and stays warm between
+  roulette spins.
 - **In call.** Peer to peer text chat, quick reactions, consent gated recording
   that notifies all parties, a connection quality readout, and a block list.
 

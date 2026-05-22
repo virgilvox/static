@@ -1,10 +1,11 @@
 <script setup>
 import { Mic, MicOff, Video, VideoOff, Circle, Square, SkipForward, Ban, PhoneOff } from 'lucide-vue-next'
 import { useCall } from '../../composables/useCall.js'
+import { useMedia } from '../../composables/useMedia.js'
 import BaseButton from '../ui/BaseButton.vue'
 
-const { audioOn, camOn, recording, toggleMic, toggleCam, toggleRecording, next, hangup, blockReport } =
-  useCall()
+const { recording, toggleRecording, next, hangup, blockReport } = useCall()
+const { audioOn, camOn, toggleMic, toggleCam } = useMedia()
 
 function onRecord() {
   if (recording.value) {

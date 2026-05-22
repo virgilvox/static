@@ -4,6 +4,7 @@ import { useProfile } from './useProfile.js'
 import { useScreen } from './useScreen.js'
 import { useLobby } from './useLobby.js'
 import { useCall } from './useCall.js'
+import { useMedia } from './useMedia.js'
 import { useTheme } from './useTheme.js'
 import { rid } from '../lib/id.js'
 
@@ -17,6 +18,7 @@ const profile = useProfile()
 const screen = useScreen()
 const lobby = useLobby()
 const call = useCall()
+const media = useMedia()
 const theme = useTheme()
 
 const isAdult = ref(false)
@@ -30,11 +32,11 @@ function init() {
 
   // Lobby asks to enter a room (auto match or manual ring). Tear the lobby down
   // and hand off to the call layer, remembering whether to resume scanning after.
-  lobby.setEnterRoomHandler(async (roomId) => {
+  lobby.setEnterRoomHandler(async (roomId, meta = {}) => {
     const resume = lobby.scanning.value
     lobby.stopAuto()
     lobby.leaveLobby()
-    await call.enterRoom(roomId, { resume })
+    await call.enterRoom(roomId, { resume, ringing: meta.ringing })
   })
 
   // Call ended. Return to the lobby and decide whether to keep scanning.
@@ -58,6 +60,11 @@ function init() {
     }
     try {
       lobby.leaveLobby()
+    } catch {
+      // ignore
+    }
+    try {
+      media.release()
     } catch {
       // ignore
     }
@@ -101,6 +108,7 @@ async function retryConnect() {
 
 function backToSetup() {
   lobby.leaveLobby()
+  media.release()
   screen.go('setup')
 }
 

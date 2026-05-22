@@ -34,6 +34,8 @@ const defaultPrefs = () => ({
   relay: 'wss://relay.clasp.to',
   lastFreq: 'commons',
   lastMode: 'roulette',
+  camId: '',
+  micId: '',
 })
 
 const profile = reactive(Object.assign(emptyProfile(), load(KEYS.profile, {})))

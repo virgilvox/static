@@ -74,8 +74,9 @@ function on(pattern, cb) {
   return client.value.on(pattern, cb)
 }
 
-function set(address, value) {
-  client.value?.set(address, value)
+function set(address, value, opts) {
+  if (opts) client.value?.set(address, value, opts)
+  else client.value?.set(address, value)
 }
 
 function emit(address, payload) {

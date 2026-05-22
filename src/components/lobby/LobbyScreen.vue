@@ -14,6 +14,7 @@ import StatusPill from '../ui/StatusPill.vue'
 import CalloutNote from '../ui/CalloutNote.vue'
 import BaseButton from '../ui/BaseButton.vue'
 import LobbyCard from './LobbyCard.vue'
+import DevicePreview from './DevicePreview.vue'
 
 const { connState, retryConnect, backToSetup } = useApp()
 const {
@@ -64,6 +65,8 @@ function onFind() {
 
 <template>
   <section class="wrap stack screen">
+    <DevicePreview />
+
     <PanelCard dark>
       <CalloutNote v-if="connState === 'connecting'" tone="warn" dark>
         <template #icon><Loader class="spin" /></template>

@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted } from 'vue'
 import { CameraOff, Signal, SignalLow, SignalMedium } from 'lucide-vue-next'
 import { useCall } from '../../composables/useCall.js'
+import { useMedia } from '../../composables/useMedia.js'
 import { useProfile } from '../../composables/useProfile.js'
 import { useScreen } from '../../composables/useScreen.js'
 import { REACTION_ICONS } from '../../lib/reactionIcons.js'
@@ -11,20 +12,8 @@ import ReactionBar from './ReactionBar.vue'
 import ChatPanel from './ChatPanel.vue'
 import CalloutNote from '../ui/CalloutNote.vue'
 
-const {
-  room,
-  peerStatus,
-  localStream,
-  remoteTiles,
-  reactions,
-  quality,
-  usingGhost,
-  camNotice,
-  toggleMic,
-  toggleCam,
-  next,
-  hangup,
-} = useCall()
+const { room, peerStatus, remoteTiles, reactions, quality, next, hangup } = useCall()
+const { stream: localStream, usingGhost, notice: camNotice, toggleMic, toggleCam } = useMedia()
 const { profile } = useProfile()
 const { freq } = useScreen()
 

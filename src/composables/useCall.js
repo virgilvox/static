@@ -1,26 +1,24 @@
-import { ref, reactive, shallowRef } from 'vue'
+import { ref } from 'vue'
 import { useClasp } from './useClasp.js'
 import { useProfile } from './useProfile.js'
 import { useScreen } from './useScreen.js'
+import { useMedia } from './useMedia.js'
 import { ns, ICE_SERVERS } from '../lib/constants.js'
 
 // The call: direct WebRTC between two browsers. CLASP carries only the handshake
 // (presence, SDP offer/answer, ICE candidates, and the recording-consent flag).
 // Camera, mic, text chat, and reactions all travel peer to peer and never touch
-// the relay.
+// the relay. The camera and mic stream itself is owned by useMedia so a lobby
+// preview carries straight into the call.
 
 const clasp = useClasp()
 const { profile } = useProfile()
 const screen = useScreen()
+const media = useMedia()
 
 const room = ref(null)
 const peerStatus = ref('connecting')
-const localStream = shallowRef(null)
 const remoteTiles = ref([]) // { peerId, handle, stream }
-const audioOn = ref(true)
-const camOn = ref(true)
-const usingGhost = ref(false)
-const camNotice = ref('')
 
 const messages = ref([]) // { from: 'me' | 'peer', handle, text, ts }
 const reactions = ref([]) // transient { key, id, peerId }
@@ -42,8 +40,20 @@ function setBlockHandler(fn) {
 const peers = new Map() // peerId -> { connection, iceQueue, info, channel }
 let roomUnsubs = []
 let waitTimer = null
-let staticRAF = null
 let statsTimer = null
+
+// A device switch in the lobby preview or mid-call swaps the live tracks on any
+// open peer connection without renegotiating.
+media.setReplaceHandler((newStream) => {
+  for (const { connection } of peers.values()) {
+    if (!connection) continue
+    const senders = connection.getSenders()
+    newStream.getTracks().forEach((track) => {
+      const sender = senders.find((s) => s.track && s.track.kind === track.kind)
+      if (sender) sender.replaceTrack(track).catch(() => {})
+    })
+  }
+})
 
 // Recording internals.
 let recorder = null
@@ -56,7 +66,7 @@ function selfId() {
   return clasp.sessionId.value
 }
 
-async function enterRoom(roomId, { resume = false } = {}) {
+async function enterRoom(roomId, { resume = false, ringing = null } = {}) {
   if (room.value) return
   screen.resumeAuto.value = resume
   room.value = roomId
@@ -66,7 +76,7 @@ async function enterRoom(roomId, { resume = false } = {}) {
   quality.value = ''
   remoteRecording.value = false
 
-  await startMedia()
+  await media.ensureStream()
 
   const freq = screen.freq.value
   const me = selfId()
@@ -96,83 +106,16 @@ async function enterRoom(roomId, { resume = false } = {}) {
     joinedAt: Date.now(),
   })
 
-  peerStatus.value = 'waiting for peer'
+  peerStatus.value = ringing ? 'ringing ' + ringing : 'waiting for peer'
   clearTimeout(waitTimer)
   waitTimer = setTimeout(() => {
     if (room.value === roomId && peers.size === 0) {
+      peerStatus.value = 'no answer'
       endCall('ended')
     }
   }, 28000)
 
   startStatsPoll()
-}
-
-// ---- media ----
-async function startMedia() {
-  usingGhost.value = false
-  camNotice.value = ''
-  const secure = window.isSecureContext
-
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    localStream.value = makeGhostStream(profile.handle || 'NO SIGNAL')
-    usingGhost.value = true
-    camNotice.value = secure
-      ? 'Camera unavailable. Connecting with a placeholder static stream.'
-      : 'No camera in an insecure context. Serve over http://localhost for camera access. Connecting with a placeholder static stream.'
-    return
-  }
-
-  try {
-    localStream.value = await navigator.mediaDevices.getUserMedia({
-      video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 } },
-      audio: true,
-    })
-  } catch (e) {
-    localStream.value = makeGhostStream(profile.handle || 'NO SIGNAL')
-    usingGhost.value = true
-    camNotice.value = 'Camera or mic blocked (' + e.name + '). Connecting with a placeholder static stream.'
-  }
-}
-
-// A canvas "dead channel" stream so the pipeline still works with no camera.
-function makeGhostStream(label) {
-  const cv = document.createElement('canvas')
-  cv.width = 320
-  cv.height = 240
-  const ctx = cv.getContext('2d')
-  const draw = () => {
-    const img = ctx.createImageData(cv.width, cv.height)
-    const d = img.data
-    for (let i = 0; i < d.length; i += 4) {
-      const v = Math.random() * 255
-      d[i] = d[i + 1] = d[i + 2] = v
-      d[i + 3] = 255
-    }
-    ctx.putImageData(img, 0, 0)
-    ctx.fillStyle = 'rgba(0,0,0,.55)'
-    ctx.fillRect(0, cv.height / 2 - 22, cv.width, 44)
-    ctx.fillStyle = '#9dff00'
-    ctx.font = '20px monospace'
-    ctx.textAlign = 'center'
-    ctx.fillText(label.toUpperCase().slice(0, 16), cv.width / 2, cv.height / 2 + 7)
-    staticRAF = requestAnimationFrame(draw)
-  }
-  draw()
-  const stream = cv.captureStream(12)
-  try {
-    const ac = new (window.AudioContext || window.webkitAudioContext)()
-    const dst = ac.createMediaStreamDestination()
-    const osc = ac.createOscillator()
-    const g = ac.createGain()
-    g.gain.value = 0
-    osc.connect(g)
-    g.connect(dst)
-    osc.start()
-    stream.addTrack(dst.stream.getAudioTracks()[0])
-  } catch {
-    // no audio track is acceptable
-  }
-  return stream
 }
 
 // ---- presence and peer connections ----
@@ -219,8 +162,8 @@ function createPeerConnection(peerId, initiator, info) {
   entry.info = info || entry.info
   peers.set(peerId, entry)
 
-  if (localStream.value) {
-    localStream.value.getTracks().forEach((t) => connection.addTrack(t, localStream.value))
+  if (media.stream.value) {
+    media.stream.value.getTracks().forEach((t) => connection.addTrack(t, media.stream.value))
   }
 
   if (initiator) {
@@ -429,21 +372,7 @@ function startStatsPoll() {
   }, 3000)
 }
 
-// ---- controls ----
-function toggleMic() {
-  const t = localStream.value?.getAudioTracks()[0]
-  if (!t) return
-  t.enabled = !t.enabled
-  audioOn.value = t.enabled
-}
-
-function toggleCam() {
-  const t = localStream.value?.getVideoTracks()[0]
-  if (!t) return
-  t.enabled = !t.enabled
-  camOn.value = t.enabled
-}
-
+// ---- controls (mic and cam toggles live in useMedia) ----
 function next() {
   leaveRoom(true)
   returnToLobby('next')
@@ -494,14 +423,9 @@ function leaveRoom(blacklist) {
 
   stopRecording(true)
 
-  if (staticRAF) cancelAnimationFrame(staticRAF)
-  staticRAF = null
-  if (localStream.value) {
-    localStream.value.getTracks().forEach((t) => t.stop())
-    localStream.value = null
-  }
-  audioOn.value = true
-  camOn.value = true
+  // The camera and mic stream is owned by useMedia and intentionally kept alive
+  // across calls so roulette spins do not blink the camera and the lobby preview
+  // stays warm. It is released when returning to setup or on unload.
   quality.value = ''
   room.value = null
 }
@@ -528,7 +452,7 @@ function startRecording() {
     cv.height = 480
     const ctx = cv.getContext('2d')
 
-    const streams = [localStream.value, ...remoteTiles.value.map((t) => t.stream)].filter(Boolean)
+    const streams = [media.stream.value, ...remoteTiles.value.map((t) => t.stream)].filter(Boolean)
     recVideos = streams.map((stream) => {
       const v = document.createElement('video')
       v.muted = true
@@ -638,12 +562,7 @@ export function useCall() {
   return {
     room,
     peerStatus,
-    localStream,
     remoteTiles,
-    audioOn,
-    camOn,
-    usingGhost,
-    camNotice,
     messages,
     reactions,
     quality,
@@ -651,8 +570,6 @@ export function useCall() {
     remoteRecording,
     enterRoom,
     leaveRoom,
-    toggleMic,
-    toggleCam,
     next,
     hangup,
     blockReport,
