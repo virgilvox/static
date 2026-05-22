@@ -3,7 +3,10 @@ import { useClasp } from './useClasp.js'
 import { useProfile } from './useProfile.js'
 import { useScreen } from './useScreen.js'
 import { useMedia } from './useMedia.js'
-import { ns, ICE_SERVERS } from '../lib/constants.js'
+import { ns, ICE_SERVERS, REACTIONS } from '../lib/constants.js'
+
+// Reaction ids we will render. Anything else from a peer is ignored.
+const VALID_REACTIONS = new Set(REACTIONS.map((r) => r.id))
 
 // The call: direct WebRTC between two browsers. CLASP carries only the handshake
 // (presence, SDP offer/answer, ICE candidates, and the recording-consent flag).
@@ -229,7 +232,7 @@ function setupChannel(peerId, channel) {
     const handle = entry?.info?.handle || 'peer'
     if (msg.kind === 'chat' && typeof msg.text === 'string') {
       messages.value = [...messages.value, { from: 'peer', handle, text: msg.text.slice(0, 500), ts: Date.now() }]
-    } else if (msg.kind === 'reaction' && msg.id) {
+    } else if (msg.kind === 'reaction' && VALID_REACTIONS.has(msg.id)) {
       pushReaction(msg.id, peerId)
     }
   }

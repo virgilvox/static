@@ -100,12 +100,21 @@ branch. Create the app:
 doctl apps create --spec .do/app.yaml
 ```
 
-Push to `main` afterward and App Platform rebuilds automatically. To apply spec
-changes:
+The spec deploys from a generic git clone URL, which does not redeploy on push.
+Trigger a rebuild from the latest commit on `main` with:
+
+```bash
+doctl apps create-deployment <APP_ID>
+```
+
+To apply spec changes (domains, build command, and so on):
 
 ```bash
 doctl apps update <APP_ID> --spec .do/app.yaml
 ```
+
+For automatic deploys on push, connect the repository through the GitHub
+integration in the dashboard and set `deploy_on_push` on the component.
 
 ### Domain and TLS
 
